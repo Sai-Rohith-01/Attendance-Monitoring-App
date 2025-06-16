@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_admin.css') }}"/>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
 </head>
 <body>
   <div class="dashboard-container">
@@ -44,7 +46,7 @@
         </button>
       </header>
 
-      <section class="charts-grid">
+      <div class="charts-grid">
         <!-- Main Chart Card -->
         <div class="card" id="chartCard" style="display: none;">
           <h2>Employee Arrival Time Distribution</h2>
@@ -54,8 +56,41 @@
             <div class="spinner"></div>
           </div>
         </div>
+        
+        <!--KPI-->
+        
+        <!-- Total Employees -->
+       <div class="kpi-container">
+          <div class="kpi-card">
+           <h3>Total Employees</h3>
+           <p id="totalEmployees">--</p>
+         </div>
+         <div class="kpi-card">
+           <h3>Average Login</h3>
+           <p id="avgLogin">--</p>
+         </div>
+         <div class="kpi-card">
+           <h3>Mismatches Today</h3>
+           <p id="mismatchesToday">--</p>
+         </div>
+         <div class="kpi-card">
+           <h3>Earliest Login</h3>
+           <p id="earliestLogin">--</p>
+           <small id="earliestLoginUser">User: --</small>
+         </div>
+         <div class="kpi-card">
+           <h3>Last Logout</h3>
+           <p id="lastLogout">--</p>
+           <small id="lastLogoutUser">User: --</small>
+         </div>
+        </div>
+
+
 
         <!-- Additional chart cards go here -->
+
+
+        
       </section>
     </main>
 
@@ -69,7 +104,8 @@
 
   <!-- JARVIS Icon -->
   <img src="{{ url_for('static', filename='Pictures/Arc_reactor.png') }}" id="jarvisBtn" title="Activate J.A.R.V.I.S." />
-
   <script src="{{ url_for('static', filename='js/dashboard_admin.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/kpi.js') }}"></script>
+  <script src="kpi.js" defer></script>
 </body>
 </html>
