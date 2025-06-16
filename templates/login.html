@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>JARVIS Login Interface</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-form-section">
+      <div class="login-logo">
+        <img src="{{ url_for('static', filename='Pictures/DRDO_LOGO.png') }}" alt="Logo" id="logo-placeholder" />
+      </div>
+      <h2 style="color: #00f0ff; font-family: 'Orbitron', sans-serif; margin-bottom: 10px;">Access Portal</h2>
+
+      {% if error %}
+      <div id="toastError" class="toast-error" style="color: #ff4b4b; margin-bottom: 15px; text-align: center;">
+        Invalid credentials
+      </div>
+      {% endif %}
+
+      <form id="loginForm" method="POST" action="{{ url_for('do_login') }}" onsubmit="return showSpinner()" autocomplete="off">
+        <label for="username">AUTHORIZED USER</label>
+        <input type="text" id="username" name="username" placeholder="Enter username" required />
+
+        <label for="password">SECURITY KEY</label>
+        <div class="input-wrapper">
+          <input type="password" id="password" name="password" placeholder="Enter password" required />
+          <i class="fa-solid fa-eye-slash toggle-password" id="togglePassword"></i>
+        </div>
+
+        <div class="remember-me">
+          <input type="checkbox" id="remember" name="remember" />
+          <label for="remember">Retain credentials</label>
+        </div>
+        
+
+        <input type="hidden" id="loginResult" value="{{ 'fail' if error else ('success' if login_success else '') }}">
+        <input type="hidden" id="loginRole" value="{{ login_role if login_success else '' }}" />
+
+        <div class="mute-control" style="margin-top: 10px;">
+          <label><input type="checkbox" id="muteJarvis" /> Mute J.A.R.V.I.S.</label>
+        </div>
+
+        <button type="submit" id="loginBtn">
+          <span class="btn-text">ENGAGE</span>
+          <span class="spinner" id="spinner"><i class="fas fa-spinner fa-spin"></i></span>
+        </button>
+      </form>
+      
+      
+      <!-- JARVIS Floating Icon -->
+       <img id="jarvisFloatingIcon" src="{{ url_for('static', filename='Pictures/Arc_reactor.png') }}" title="Activate J.A.R.V.I.S." />
+
+
+    </div>
+
+    <div class="login-image-section">
+      <div id="slideshow" class="slideshow">
+        <img src="{{ url_for('static', filename='Pictures/BG1.jpg') }}" class="slide active" />
+        <img src="{{ url_for('static', filename='Pictures/BG2.jpg') }}" class="slide" />
+        <img src="{{ url_for('static', filename='Pictures/BG3.png') }}" class="slide" />
+        <img src="{{ url_for('static', filename='Pictures/BG4.png') }}" class="slide" />
+        <img src="{{ url_for('static', filename='Pictures/BG5.jpg') }}" class="slide" />
+        <img src="{{ url_for('static', filename='Pictures/BG6.jpg') }}" class="slide" />
+      </div>
+    </div>
+  </div>
+</body>
+</html>

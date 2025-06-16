@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_admin.css') }}"/>
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo"><i class="fa-solid fa-user-tie"></i> Welcome, Admin</div>
+      <nav>
+        <ul>
+          <li class="active">📊 Dashboard</li>
+          <li>👥 Employees</li>
+          <li>📄 Reports</li>
+          <li>📈 Analytics</li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main-content">
+      <header class="dashboard-header">
+        <div class="header-left">
+          <h1>📋 Admin Dashboard</h1>
+        </div>
+
+        <div class="date-container">
+          <label for="datePicker">📅</label>
+          <input type="date" id="datePicker" />
+          <button id="generateBtn" title="Generate Chart">⚡ Generate</button>
+        </div>
+
+        <!-- 🌙 Dark Mode Toggle -->
+        <button id="darkModeToggle" title="Toggle Dark Mode" style="padding: 8px 12px; border-radius: 8px; border: none; cursor: pointer;">
+          🌙
+        </button>
+      </header>
+
+      <section class="charts-grid">
+        <!-- Main Chart Card -->
+        <div class="card" id="chartCard" style="display: none;">
+          <h2>Employee Arrival Time Distribution</h2>
+          <canvas id="arrivalPieChart"></canvas>
+          <!-- Spinner inside chart card -->
+          <div id="loadingSpinner" class="spinner-container hidden">
+            <div class="spinner"></div>
+          </div>
+        </div>
+
+        <!-- Additional chart cards go here -->
+      </section>
+    </main>
+
+    <!-- Logout Button -->
+    <div class="logout-container">
+      <form action="{{ url_for('logout') }}" method="get">
+        <a id="logoutBtn" href="/logout">Logout</a>
+      </form>
+    </div>
+  </div>
+
+  <!-- JARVIS Icon -->
+  <img src="{{ url_for('static', filename='Pictures/Arc_reactor.png') }}" id="jarvisBtn" title="Activate J.A.R.V.I.S." />
+
+  <script src="{{ url_for('static', filename='js/dashboard_admin.js') }}"></script>
+</body>
+</html>

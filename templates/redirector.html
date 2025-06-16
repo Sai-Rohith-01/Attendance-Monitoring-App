@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Redirecting...</title>
+    <script>
+        const role = "{{ role }}";
+        const muted = localStorage.getItem("jarvis_muted") === "true";
+
+        const granted = new Audio("/static/audio/jarvis_granted.mp3");
+
+        if (!muted) {
+            granted.play().then(() => {
+                granted.onended = () => {
+                    window.location.href = role === "admin" ? "/dashboard_admin" : "/dashboard_user";
+                };
+            }).catch(() => {
+                window.location.href = role === "admin" ? "/dashboard_admin" : "/dashboard_user";
+            });
+        } else {
+            window.location.href = role === "admin" ? "/dashboard_admin" : "/dashboard_user";
+        }
+    </script>
+</head>
+<body>
+</body>
+</html>
