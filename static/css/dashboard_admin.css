@@ -112,7 +112,6 @@ header h1,
     text-align: center;
 }
 
-
 .card h2 {
     margin-top: 0.5rem;
     margin-bottom: 1rem;
@@ -131,7 +130,6 @@ header h1,
     display: block;
     margin: 0 auto;
 }
-
 
 /* Responsive */
 @media screen and (max-width: 768px) {
@@ -169,7 +167,6 @@ header {
     gap: 10px;
     font-size: 16px;
 }
-
 
 #datePicker {
     padding: 8px 12px;
@@ -238,7 +235,6 @@ header {
     background-color: var(--logout-hover);
 }
 
-
 /* Dark Mode Toggle Button */
 .dark-mode-toggle {
     padding: 8px 12px;
@@ -265,151 +261,127 @@ header {
     margin-right: 20px;
 }
 
+/* Date & View Mode Container */
+.date-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+
+/* Common modern input style */
+#datePicker,
+#viewMode {
+  padding: 10px 14px;
+  font-size: 14px;
+  border: none;
+  border-radius: 8px;
+  background: #f9f9f9;
+  color: #333;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease-in-out;
+}
+
+/* Focus and hover effects */
+#datePicker:hover,
+#viewMode:hover,
+#datePicker:focus,
+#viewMode:focus {
+  background-color: #fff;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  outline: none;
+  border: 1px solid #4caf50;
+}
 
 
+/* JARVIS Button */
 #jarvisBtn {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 80px;
-  height: 80px;
-  z-index: 1000;
-  cursor: pointer;
-  transition: transform 0.3s ease-in-out;
-  border-radius: 50%;
-  object-fit: cover;
-  animation: idleGlow 3s ease-in-out infinite alternate;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 80px;
+    height: 80px;
+    z-index: 1000;
+    cursor: pointer;
+    transition: transform 0.3s ease-in-out;
+    border-radius: 50%;
+    object-fit: cover;
+    animation: idleGlow 3s ease-in-out infinite alternate;
 }
 
 #jarvisBtn:hover {
-  animation: pulseGlow 1.5s infinite;
+    animation: pulseGlow 1.5s infinite;
 }
 
 @keyframes pulseGlow {
-  0% {
-    transform: scale(1);
-    filter: drop-shadow(0 0 5px #00f0ff);
-  }
-  50% {
-    transform: scale(1.08);
-    filter: drop-shadow(0 0 20px #00f0ff);
-  }
-  100% {
-    transform: scale(1);
-    filter: drop-shadow(0 0 5px #00f0ff);
-  }
+    0% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 5px #00f0ff);
+    }
+    50% {
+        transform: scale(1.08);
+        filter: drop-shadow(0 0 20px #00f0ff);
+    }
+    100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 5px #00f0ff);
+    }
 }
 
 @keyframes idleGlow {
-  0% {
-    filter: drop-shadow(0 0 2px #00f0ff);
-  }
-  100% {
-    filter: drop-shadow(0 0 8px #00f0ff);
-  }
+    0% { filter: drop-shadow(0 0 2px #00f0ff); }
+    100% { filter: drop-shadow(0 0 8px #00f0ff); }
 }
 
-
+/* Generate Button */
 #generateBtn {
-  padding: 8px 14px;
-  font-weight: bold;
-  background: linear-gradient(145deg, #00f0ff, #0088cc);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  box-shadow: 0 0 12px #00f0ff;
-  transition: transform 0.2s ease-in-out, background 0.3s;
+    padding: 8px 14px;
+    font-weight: bold;
+    background: linear-gradient(145deg, #00f0ff, #0088cc);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 0 12px #00f0ff;
+    transition: transform 0.2s ease-in-out, background 0.3s;
 }
 
 #generateBtn:hover {
-  transform: scale(1.05);
-  background: linear-gradient(145deg, #00c4e2, #006699);
-  box-shadow: 0 0 16px #00f0ff;
+    transform: scale(1.05);
+    background: linear-gradient(145deg, #00c4e2, #006699);
+    box-shadow: 0 0 16px #00f0ff;
 }
-
 
 /* Spinner Container */
 .spinner-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 12px;
-}
-
-/* Hide by default */
-.hidden {
-  display: none !important;
-}
-
-/* Neon Glow Spinner */
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid rgba(0, 255, 255, 0.15);
-  border-top: 4px solid #00ffff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite, glowPulse 1.2s ease-in-out infinite;
-  box-shadow: 0 0 8px #00ffff, 0 0 20px #00ffff inset;
-}
-
-/* Rotate */
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Pulse Glow */
-@keyframes glowPulse {
-  0%, 100% {
-    box-shadow: 0 0 8px #00ffff, 0 0 20px #00ffff inset;
-  }
-  50% {
-    box-shadow: 0 0 15px #00ffff, 0 0 30px #00ffff inset;
-  }
-}
-
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-
-/* 🌙 Spinner visibility in dark mode */
-.dark-mode .spinner {
-  border-top: 4px solid #00f0ff;
-  border-right: 4px solid #00f0ff;
-  border-bottom: 4px solid #00f0ff;
-  border-left: 4px solid transparent;
-}
-
-.spinner-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    padding: 12px;
 }
 
 .spinner {
-  border: 4px solid #3498db;
-  border-top: 4px solid transparent;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-}
-
-.hidden {
-  display: none !important;
+    border: 4px solid #3498db;
+    border-top: 4px solid transparent;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
+.hidden {
+    display: none !important;
+}
 
+/* KPI Cards */
 .kpi-container {
   display: flex;
   justify-content: center;
@@ -448,3 +420,92 @@ header {
 #mismatchesToday {
   color: red;
 }
+
+/* 🎯 Anomaly KPI Card (Base styling) */
+#anomalyCard {
+  transition: all 0.4s ease-in-out;
+}
+
+/* ✅ SAFE STATE (No Anomalies) */
+#anomalyCard.safe {
+  background: linear-gradient(135deg, #b6fcb6, #72e672);
+  border: 2px solid #4caf50;
+  box-shadow: 0 0 10px rgba(76, 175, 80, 0.4);
+}
+
+#anomalyCard.safe h3,
+#anomalyCard.safe p,
+#anomalyCard.safe small {
+  color: #1b4d1b;
+  text-shadow: none;
+}
+
+#anomalyCard.safe .status-ok {
+  color: #2b8a2b;
+  font-weight: bold;
+  font-size: 0.9rem;
+  display: block;
+  margin-top: 0.5rem;
+}
+
+/* 🚨 THREAT STATE (Anomalies Found) */
+#anomalyCard.threat {
+  background: linear-gradient(135deg, #ff4d4d, #ff944d);
+  border: 2px solid #ff0000;
+  box-shadow: 0 0 20px rgba(255, 0, 0, 0.7), 0 0 30px rgba(255, 0, 0, 0.5) inset;
+  animation: pulseThreat 1.2s infinite;
+}
+
+#anomalyCard.threat h3,
+#anomalyCard.threat p,
+#anomalyCard.threat small {
+  color: #fff;
+  text-shadow: 0 0 4px #000;
+}
+
+@keyframes pulseThreat {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.6), 0 0 30px rgba(255, 0, 0, 0.5) inset;
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(255, 0, 0, 0.9), 0 0 40px rgba(255, 0, 0, 0.6) inset;
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.6), 0 0 30px rgba(255, 0, 0, 0.5) inset;
+  }
+}
+
+/* 📊 KPI Visuals (Weekly & Monthly Charts) */
+.kpi-visuals-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-top: 20px;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.chart-card {
+  flex: 1 1 48%;
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.chart-card h3 {
+  margin-bottom: 10px;
+  color: var(--text-color);
+}
+
+.chart-card canvas {
+  width: 100% !important;
+  height: 300px !important;
+}
+
+

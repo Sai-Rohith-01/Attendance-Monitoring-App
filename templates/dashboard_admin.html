@@ -10,7 +10,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_admin.css') }}"/>
   <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
-
 </head>
 <body>
   <div class="dashboard-container">
@@ -34,63 +33,102 @@
           <h1>📋 Admin Dashboard</h1>
         </div>
 
-        <div class="date-container">
+        <!-- Dropdown -->
+        <div class="visualization-controls">
+          <label for="visualSelect">Select Visualization:</label>
+          <select id="visualSelect">
+            <option value="" disabled selected>-- Choose --</option>
+            <option value="kpi">KPI Summary</option>
+            <option value="pie">Pie Chart</option>
+          </select>
+        </div>
+        
+        <!-- Date Picker -->
+        <div class="date-container" id="datePickerSection">
           <label for="datePicker">📅</label>
           <input type="date" id="datePicker" />
+          
+          <!--View Dropdown-->
+          <select id="viewMode">
+            <option value="daily" selected>Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+          
+
+          <!--Generate-->
           <button id="generateBtn" title="Generate Chart">⚡ Generate</button>
         </div>
 
-        <!-- 🌙 Dark Mode Toggle -->
+        <!-- Dark Mode Toggle -->
         <button id="darkModeToggle" title="Toggle Dark Mode" style="padding: 8px 12px; border-radius: 8px; border: none; cursor: pointer;">
           🌙
         </button>
       </header>
 
-      <div class="charts-grid">
-        <!-- Main Chart Card -->
+      <section>
+        
+        <!-- KPI SECTION -->
+         <div id="kpiSection" style="display: none;">
+          
+          <!-- Daily KPI Cards -->
+           <div class="kpi-container" id="dailyKPIContainer">
+            <div class="kpi-card">
+              <h3>Total Employees</h3>
+              <p id="totalEmployees">--</p>
+            </div>
+            <div class="kpi-card">
+              <h3>Average Login</h3>
+              <p id="avgLogin">--</p>
+            </div>
+            <div class="kpi-card">
+              <h3>Mismatches Today</h3>
+              <p id="mismatchesToday">--</p>
+            </div>
+            <div class="kpi-card">
+              <h3>Earliest Login</h3>
+              <p id="earliestLogin">--</p>
+              <small id="earliestLoginUser">User: --</small>
+            </div>
+            <div class="kpi-card">
+              <h3>Last Logout</h3>
+              <p id="lastLogout">--</p>
+              <small id="lastLogoutUser">User: --</small>
+            </div>
+            <div class="kpi-card" id="anomalyCard">
+              <h3>⚠️ Anomalies</h3>
+              <p><strong>Early Logins:</strong> <span id="earlyLoginCount">--</span></p>
+              <small id="earlyLoginUsers">Users: --</small>
+              <p><strong>Late Logouts:</strong> <span id="lateLogoutCount">--</span></p>
+              <small id="lateLogoutUsers">Users: --</small>
+            </div>
+          </div>
+          
+          <!-- Weekly/Monthly KPI Charts -->
+           <div class="kpi-visuals-container" id="kpiChartsContainer" style="display: none;">
+            <div class="chart-card">
+              <h3 id="heatmapTitle">Weekly Heatmap</h3>
+              <canvas id="kpiHeatmapChart"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3 id="lineOrBarTitle">Weekly Trends</h3>
+              <canvas id="kpiTrendChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- PIE CHART SECTION -->
         <div class="card" id="chartCard" style="display: none;">
           <h2>Employee Arrival Time Distribution</h2>
           <canvas id="arrivalPieChart"></canvas>
-          <!-- Spinner inside chart card -->
           <div id="loadingSpinner" class="spinner-container hidden">
             <div class="spinner"></div>
           </div>
         </div>
-        
-        <!--KPI-->
-        
-        <!-- Total Employees -->
-       <div class="kpi-container">
-          <div class="kpi-card">
-           <h3>Total Employees</h3>
-           <p id="totalEmployees">--</p>
-         </div>
-         <div class="kpi-card">
-           <h3>Average Login</h3>
-           <p id="avgLogin">--</p>
-         </div>
-         <div class="kpi-card">
-           <h3>Mismatches Today</h3>
-           <p id="mismatchesToday">--</p>
-         </div>
-         <div class="kpi-card">
-           <h3>Earliest Login</h3>
-           <p id="earliestLogin">--</p>
-           <small id="earliestLoginUser">User: --</small>
-         </div>
-         <div class="kpi-card">
-           <h3>Last Logout</h3>
-           <p id="lastLogout">--</p>
-           <small id="lastLogoutUser">User: --</small>
-         </div>
-        </div>
-
-
 
         <!-- Additional chart cards go here -->
 
-
-        
       </section>
     </main>
 
@@ -101,11 +139,19 @@
       </form>
     </div>
   </div>
+  
+
 
   <!-- JARVIS Icon -->
   <img src="{{ url_for('static', filename='Pictures/Arc_reactor.png') }}" id="jarvisBtn" title="Activate J.A.R.V.I.S." />
+
+  <!--Audio-->
+  <audio id="jarvisWorking" src="/static/jarvis_working.mp3"></audio>
+  <audio id="jarvisError" src="/static/jarvis_error.mp3"></audio>
+
+  <!-- Scripts -->
   <script src="{{ url_for('static', filename='js/dashboard_admin.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/pie.js') }}"></script>
   <script src="{{ url_for('static', filename='js/kpi.js') }}"></script>
-  <script src="kpi.js" defer></script>
 </body>
 </html>
