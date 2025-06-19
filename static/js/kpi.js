@@ -1,18 +1,24 @@
 document.addEventListener("DOMContentLoaded", () => {
   const kpiSection = document.getElementById("kpiSection");
-  const kpiContainer = document.querySelector(".kpi-container");
+  const kpiContainer = document.querySelector("#kpiSection .kpi-container");
+  const weeklyKPISection = document.getElementById("weeklyKPISection");
+  const weeklyKPIContainer = document.querySelector("#weeklyKPISection");
   const anomalyCard = document.getElementById("anomalyCard");
-
   const errorAudio = new Audio("/static/audio/jarvis_error.mp3");
 
-  function setLoadingState(isLoading) {
-    if (kpiContainer) {
+  function setLoadingState(isLoading, mode = "daily") {
+    if (mode === "daily" && kpiContainer) {
       kpiContainer.classList.toggle("kpi-loader", isLoading);
+    }
+    if (mode === "weekly" && weeklyKPIContainer) {
+      weeklyKPIContainer.classList.toggle("kpi-loader", isLoading);
     }
   }
 
+  // ================= DAILY KPI =================
   window.loadKPIData = function (date) {
-    setLoadingState(true);
+    setLoadingState(true, "daily");
+    console.log("🔍 Fetching Daily KPI for:", date);
 
     fetch(`/get_kpi_data?date=${date}`)
       .then(res => res.json())
@@ -43,7 +49,6 @@ document.addEventListener("DOMContentLoaded", () => {
         anomalyCard?.classList.toggle("threat", isThreat);
         anomalyCard?.classList.toggle("safe", !isThreat);
 
-        // Only play error alert if there's an anomaly
         if (isThreat) {
           try {
             errorAudio.pause();
@@ -53,11 +58,39 @@ document.addEventListener("DOMContentLoaded", () => {
             console.warn("Error audio playback failed:", e);
           }
         }
+
+        kpiSection.style.display = "block";
       })
       .catch(err => {
-        console.error("Error fetching KPI:", err);
+        console.error("Error fetching Daily KPI:", err);
         alert("Failed to fetch KPI data.");
       })
-      .finally(() => setLoadingState(false));
+      .finally(() => setLoadingState(false, "daily"));
+  };
+
+  // ================= WEEKLY KPI =================
+  window.renderWeeklyKPI = function (data) {
+    setLoadingState(true, "weekly");
+    try {
+      const avgAttendance = data.average_attendance_percent || '--';
+      const punctualDay = data.most_punctual_day || {};
+
+      const attendanceValueEl = document.getElementById("weeklyAvgAttendanceValue");
+      const punctualDayEl = document.getElementById("mostPunctualDayValue");
+      const punctualTimeEl = document.getElementById("mostPunctualTimeValue");
+
+      if (attendanceValueEl) attendanceValueEl.textContent = `${avgAttendance}%`;
+      if (punctualDayEl) punctualDayEl.textContent = punctualDay.day || '--';
+      if (punctualTimeEl) punctualTimeEl.textContent = punctualDay.avg_punch_in || '--';
+
+      // 🔥 Force it to show even if CSS tries to hide it
+    weeklyKPISection.style.display = "flex";
+
+      console.log("✅ Weekly KPI data rendered:", data);
+    } catch (err) {
+      console.error("Error rendering Weekly KPI:", err);
+    } finally {
+      setLoadingState(false, "weekly");
+    }
   };
 });

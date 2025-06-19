@@ -116,6 +116,10 @@ def preprocess_data():
     days_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     cat_type = CategoricalDtype(categories=days_order, ordered=True)
     daily_summary['DayOfWeek'] = daily_summary['DayOfWeek'].astype(cat_type)
+    
+
+    daily_attendance_summary = daily_summary.groupby('DATE_NEW')['Userid'].nunique().reset_index()
+    daily_attendance_summary.rename(columns={'Userid': 'Present'}, inplace=True)
 
     weekday_trends = daily_summary.groupby(['Userid', 'DayOfWeek'], observed=True).agg(
         Total_Hours=('Presence_Hours', 'sum'),
@@ -162,7 +166,8 @@ def clear_cache():
 
 
 
-# =================== ROUTES ===================
+# ======================================= LOGIN & LOGOUT ======================================
+
 @app.route('/')
 def login():
     error = request.args.get("auth") == "fail"
@@ -187,6 +192,10 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
+
+
+# ==================================== ADMIN DASHBOARD ROUTE =========================================
+
 @app.route('/dashboard_admin')
 def dashboard_admin():
     if session.get('role') != 'admin':
@@ -209,13 +218,17 @@ def dashboard_admin():
         mismatches_today=mismatches_today
     )
 
+
+# ========================================= USER DASHBOARD ROUTE ===================================
+
 @app.route('/dashboard_user')
 def dashboard_user():
     if session.get('role') != 'user':
         return redirect(url_for('login'))
     return render_template('dashboard_user.html')
 
-# =================== API ROUTES ===================
+
+# ========================================== DAILY KPI ROUTE ==================================
 @app.route('/get_kpi_data')
 def get_kpi_data():
     if 'role' not in session or session.get('role') != 'admin':
@@ -299,9 +312,118 @@ def get_kpi_data():
     except Exception as e:
         print("Error loading KPI data:", e)
         return jsonify({'error': 'Failed to fetch KPI data.'})
+    
+    print("✅ /get_kpi_data route called")
+
+    
+    
+@app.route('/get_weekly_kpi_data')
+def get_weekly_kpi_data():
+    if 'role' not in session or session.get('role') != 'admin':
+        return jsonify({})
+
+    selected_date_str = request.args.get('date')
+    if not selected_date_str:
+        return jsonify({})
+
+    try:
+        selected_date = pd.to_datetime(selected_date_str)
+        start_of_week = selected_date - pd.to_timedelta(selected_date.weekday(), unit='D')  # Monday
+        end_of_week = start_of_week + pd.Timedelta(days=6)  # Sunday
+
+        print("📆 Selected Date:", selected_date)
+        print("📊 Start of Week:", start_of_week, "| End of Week:", end_of_week)
+
+        total_users = df['Userid'].nunique()
+
+        # Step 1: Create daily attendance count from daily_summary
+        daily_attendance_summary = (
+            daily_summary.groupby('DATE_NEW')['Userid']
+            .nunique()
+            .reset_index()
+            .rename(columns={'Userid': 'Present'})
+        )
+
+        # Step 2: Filter for the current week
+        week_data = daily_attendance_summary[
+            (daily_attendance_summary['DATE_NEW'] >= start_of_week) &
+            (daily_attendance_summary['DATE_NEW'] <= end_of_week)
+        ].copy()
+
+        print("✅ Week Data Rows:", len(week_data))
+
+        # Step 3: Compute attendance by day
+        attendance_by_day = []
+        for _, row in week_data.iterrows():
+            day_name = row['DATE_NEW'].day_name()
+            present_count = row['Present']
+            attendance_percent = (present_count / total_users) * 100
+            attendance_by_day.append({
+                'day': day_name,
+                'percentage': round(attendance_percent, 2)
+            })
+
+        average_attendance_percent = round(
+            sum(item['percentage'] for item in attendance_by_day) / len(attendance_by_day), 2
+        ) if attendance_by_day else 0.0
+
+        # Step 4: Punctuality analysis
+        clean_paired_df['DATE_NEW'] = pd.to_datetime(clean_paired_df['DATE_NEW'])
+        week_punchins = clean_paired_df[
+            (clean_paired_df['DATE_NEW'] >= start_of_week) &
+            (clean_paired_df['DATE_NEW'] <= end_of_week)
+        ].copy()
+
+        punch_in_data = week_punchins[['DATE_NEW', 'IN']].dropna()
+
+        punch_in_data['weekday'] = punch_in_data['DATE_NEW'].dt.day_name()
+        punch_in_data['punch_in_minutes'] = (
+            punch_in_data['IN'].dt.hour * 60 +
+            punch_in_data['IN'].dt.minute
+        )
+
+        print("🕒 Punch-in Rows:", len(punch_in_data))
+
+        punch_in_by_day = []
+        grouped = punch_in_data.groupby('weekday')['punch_in_minutes'].mean()
+
+        for day, avg_minutes in grouped.items():
+            hh = int(avg_minutes // 60)
+            mm = int(avg_minutes % 60)
+            punch_in_by_day.append({
+                'day': day,
+                'avg_punch_in': f"{hh:02d}:{mm:02d}"
+            })
+
+        if punch_in_by_day:
+            most_punctual = min(
+                punch_in_by_day,
+                key=lambda x: int(x['avg_punch_in'].split(':')[0]) * 60 +
+                              int(x['avg_punch_in'].split(':')[1])
+            )
+            most_punctual_day = {
+                'day': most_punctual['day'],
+                'avg_punch_in': most_punctual['avg_punch_in']
+            }
+        else:
+            most_punctual_day = {'day': 'N/A', 'avg_punch_in': 'N/A'}
+
+        return jsonify({
+            'average_attendance_percent': average_attendance_percent,
+            'most_punctual_day': most_punctual_day,
+            'attendance_by_day': attendance_by_day,
+            'punch_in_by_day': punch_in_by_day
+        })
+
+    except Exception as e:
+        print(f"[ERROR] Weekly KPI generation failed: {e}")
+        return jsonify({})
 
 
 
+
+
+# ========================================= MISCELLANEOUS ====================================
 
 @app.before_request
 def ensure_data_loaded():
@@ -325,7 +447,7 @@ def refresh_data():
 
 
 
-# =================== MAIN ===================
+# =============================================== MAIN ==================================
 if __name__ == '__main__':
     app.run(debug=True)
 

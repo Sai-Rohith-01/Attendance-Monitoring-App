@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin Dashboard</title>
 
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -50,9 +51,9 @@
           
           <!--View Dropdown-->
           <select id="viewMode">
-            <option value="daily" selected>Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
+            <option value="Daily" selected>Daily</option>
+            <option value="Weekly">Weekly</option>
+            <option value="Monthly">Monthly</option>
           </select>
           
 
@@ -68,64 +69,59 @@
 
       <section>
         
-        <!-- KPI SECTION -->
-         <div id="kpiSection" style="display: none;">
-          
-          <!-- Daily KPI Cards -->
-           <div class="kpi-container" id="dailyKPIContainer">
-            <div class="kpi-card">
-              <h3>Total Employees</h3>
-              <p id="totalEmployees">--</p>
-            </div>
-            <div class="kpi-card">
-              <h3>Average Login</h3>
-              <p id="avgLogin">--</p>
-            </div>
-            <div class="kpi-card">
-              <h3>Mismatches Today</h3>
-              <p id="mismatchesToday">--</p>
-            </div>
-            <div class="kpi-card">
-              <h3>Earliest Login</h3>
-              <p id="earliestLogin">--</p>
-              <small id="earliestLoginUser">User: --</small>
-            </div>
-            <div class="kpi-card">
-              <h3>Last Logout</h3>
-              <p id="lastLogout">--</p>
-              <small id="lastLogoutUser">User: --</small>
-            </div>
-            <div class="kpi-card" id="anomalyCard">
-              <h3>⚠️ Anomalies</h3>
-              <p><strong>Early Logins:</strong> <span id="earlyLoginCount">--</span></p>
-              <small id="earlyLoginUsers">Users: --</small>
-              <p><strong>Late Logouts:</strong> <span id="lateLogoutCount">--</span></p>
-              <small id="lateLogoutUsers">Users: --</small>
-            </div>
-          </div>
-          
-          <!-- Weekly/Monthly KPI Charts -->
-           <div class="kpi-visuals-container" id="kpiChartsContainer" style="display: none;">
-            <div class="chart-card">
-              <h3 id="heatmapTitle">Weekly Heatmap</h3>
-              <canvas id="kpiHeatmapChart"></canvas>
-            </div>
-            <div class="chart-card">
-              <h3 id="lineOrBarTitle">Weekly Trends</h3>
-              <canvas id="kpiTrendChart"></canvas>
-            </div>
-          </div>
-        </div>
+        <!-- ✅ DAILY KPI SECTION -->
+<div id="kpiSection">
+  <div class="kpi-container" id="dailyKPIContainer">
+    <div class="kpi-card">
+      <h3>Total Employees</h3>
+      <p id="totalEmployees">--</p>
+    </div>
+    <div class="kpi-card">
+      <h3>Average Login</h3>
+      <p id="avgLogin">--</p>
+    </div>
+    <div class="kpi-card">
+      <h3>Mismatches Today</h3>
+      <p id="mismatchesToday">--</p>
+    </div>
+    <div class="kpi-card">
+      <h3>Earliest Login</h3>
+      <p id="earliestLogin">--</p>
+      <small id="earliestLoginUser">User: --</small>
+    </div>
+    <div class="kpi-card">
+      <h3>Last Logout</h3>
+      <p id="lastLogout">--</p>
+      <small id="lastLogoutUser">User: --</small>
+    </div>
+    <div class="kpi-card" id="anomalyCard">
+      <h3>⚠️ Anomalies</h3>
+      <p><strong>Early Logins:</strong> <span id="earlyLoginCount">--</span></p>
+      <small id="earlyLoginUsers">Users: --</small>
+      <p><strong>Late Logouts:</strong> <span id="lateLogoutCount">--</span></p>
+      <small id="lateLogoutUsers">Users: --</small>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ WEEKLY KPI SECTION (Moved Outside) -->
+<div id="weeklyKPISection" class="kpi-container">
+  <div class="kpi-card" id="weeklyAvgAttendanceCard">
+    <h4>Avg Weekly Attendance</h4>
+    <p id="weeklyAvgAttendanceValue">--%</p>
+  </div>
+  <div class="kpi-card" id="mostPunctualDayCard">
+    <h4>Most Punctual Day</h4>
+    <p id="mostPunctualDayValue">--</p>
+    <p id="mostPunctualTimeValue" class="subtext">--</p>
+  </div>
+</div>
 
 
-        <!-- PIE CHART SECTION -->
-        <div class="card" id="chartCard" style="display: none;">
-          <h2>Employee Arrival Time Distribution</h2>
-          <canvas id="arrivalPieChart"></canvas>
-          <div id="loadingSpinner" class="spinner-container hidden">
-            <div class="spinner"></div>
-          </div>
-        </div>
+
+
+
+       
 
         <!-- Additional chart cards go here -->
 
@@ -150,8 +146,9 @@
   <audio id="jarvisError" src="/static/jarvis_error.mp3"></audio>
 
   <!-- Scripts -->
-  <script src="{{ url_for('static', filename='js/dashboard_admin.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/pie.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/kpi.js') }}"></script>
+   <script src="{{ url_for('static', filename='js/kpi.js') }}"></script>
+   <script src="{{ url_for('static', filename='js/dashboard_admin.js') }}"></script>
+   <script src="{{ url_for('static', filename='js/pie.js') }}"></script>
+
 </body>
 </html>

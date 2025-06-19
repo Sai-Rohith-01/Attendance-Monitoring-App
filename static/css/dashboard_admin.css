@@ -381,13 +381,13 @@ header {
     display: none !important;
 }
 
-/* KPI Cards */
+/* ================= DAILY KPI CARDS ================= */
 .kpi-container {
   display: flex;
   justify-content: center;
   gap: 30px;
   margin: 20px auto 40px auto;
-  max-width: 900px;
+  max-width: 1200px;
   flex-wrap: wrap;
 }
 
@@ -405,7 +405,8 @@ header {
   transform: translateY(-5px);
 }
 
-.kpi-card h3 {
+.kpi-card h3,
+.kpi-card h4 {
   font-size: 18px;
   margin-bottom: 10px;
   color: var(--text-color);
@@ -421,12 +422,11 @@ header {
   color: red;
 }
 
-/* 🎯 Anomaly KPI Card (Base styling) */
+/* ========== ANOMALY KPI CARD STATES ========== */
 #anomalyCard {
   transition: all 0.4s ease-in-out;
 }
 
-/* ✅ SAFE STATE (No Anomalies) */
 #anomalyCard.safe {
   background: linear-gradient(135deg, #b6fcb6, #72e672);
   border: 2px solid #4caf50;
@@ -448,7 +448,6 @@ header {
   margin-top: 0.5rem;
 }
 
-/* 🚨 THREAT STATE (Anomalies Found) */
 #anomalyCard.threat {
   background: linear-gradient(135deg, #ff4d4d, #ff944d);
   border: 2px solid #ff0000;
@@ -478,9 +477,40 @@ header {
   }
 }
 
-/* 📊 KPI Visuals (Weekly & Monthly Charts) */
-.kpi-visuals-container {
-  display: flex;
+/* ================= WEEKLY KPI CARDS ================= */
+
+#weeklyKPISection .kpi-card {
+  flex: 1 1 48%;
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+#weeklyKPISection .kpi-card p {
+  font-size: 24px;
+  font-weight: bold;
+  color: #2a9d8f;
+}
+
+#weeklyKPISection .subtext {
+  font-size: 14px;
+  font-weight: normal;
+  color: #888;
+  margin-top: 5px;
+}
+
+
+/* Hide Daily KPI section by default */
+#kpiSection {
+  display: none;
+}
+
+
+/* ✅ Final fix */
+#weeklyKPISection {
+  display: none; /* Hidden by default */
   flex-wrap: wrap;
   gap: 20px;
   margin-top: 20px;
@@ -490,22 +520,8 @@ header {
   margin-right: auto;
 }
 
-.chart-card {
-  flex: 1 1 48%;
-  background-color: var(--card-bg);
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
 
-.chart-card h3 {
-  margin-bottom: 10px;
-  color: var(--text-color);
-}
 
-.chart-card canvas {
-  width: 100% !important;
-  height: 300px !important;
-}
+
 
 
