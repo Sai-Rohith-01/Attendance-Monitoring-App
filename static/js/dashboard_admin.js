@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const kpiSection = document.getElementById('kpiSection');
   const weeklyKPISection = document.getElementById('weeklyKPISection');
   const monthlyChartRow1 = document.getElementById('monthlyChartRow1');
+  const monthlyChartRow2 = document.getElementById("monthlyChartRow2");
 
   generateBtn.addEventListener('click', async () => {
     const selectedDate = datePicker.value;
@@ -24,6 +25,7 @@ document.addEventListener('DOMContentLoaded', function () {
     kpiSection.style.display = "none";
     weeklyKPISection.style.display = "none";
     monthlyChartRow1.style.display = "none";
+    monthlyChartRow2.style.display = "none";
 
     if (selectedVisual === "kpi") {
       if (viewMode === "Daily") {
@@ -46,6 +48,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         fetchMonthlyAttendanceTrend(selectedMonth);
         fetchMonthlyPresenceSummary(selectedMonth);
+
+        fetchMonthlyKPIBlock(selectedMonth);
+
+
       }
     }
 
@@ -294,5 +300,83 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
   }
+
+
+// =============== FETCH Monthly Avg Attendance (Gauge-style) ===============
+function fetchMonthlyKPIBlock(month) {
+  const avgPromise = fetch(`/get_monthly_avg_attendance?month=${month}`).then(res => res.json());
+  const punctualPromise = fetch(`/get_monthly_most_punctual_day?month=${month}`).then(res => res.json());
+
+  Promise.all([avgPromise, punctualPromise])
+    .then(([avgData, punctualData]) => {
+      let valid = true;
+
+      if (!avgData || typeof avgData.avg_attendance_percent !== "number") {
+        showError("No average attendance data for this month.");
+        valid = false;
+      }
+
+      if (!punctualData || !punctualData.most_punctual_day || !punctualData.avg_punch_in) {
+        showError("No punctuality data found.");
+        valid = false;
+      }
+
+      if (!valid) {
+        monthlyChartRow2.style.display = "none";
+        return;
+      }
+
+      // ✅ Both APIs returned valid data, show the section
+      monthlyChartRow2.style.display = "flex";
+
+      renderAvgAttendanceChart(avgData.avg_attendance_percent);
+      document.getElementById("punctualDayText").textContent = punctualData.most_punctual_day;
+      document.getElementById("punctualTimeText").textContent = `Avg Punch-In: ${punctualData.avg_punch_in}`;
+    })
+    .catch(err => {
+      console.error("[ERROR] Monthly KPI Block:", err);
+      showError("Failed to load monthly KPI data.");
+      monthlyChartRow2.style.display = "none";
+    });
+}
+
+
+
+let monthlyGaugeChart;
+
+function renderAvgAttendanceChart(value) {
+  const ctx = document.getElementById("monthlyAvgAttendanceChart").getContext("2d");
+  if (monthlyGaugeChart) monthlyGaugeChart.destroy();
+
+  monthlyGaugeChart = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: ["Attendance", "Remaining"],
+      datasets: [{
+        data: [value, 100 - value],
+        backgroundColor: [
+          getComputedStyle(document.documentElement).getPropertyValue('--gauge-fill').trim() || '#4CAF50',
+          getComputedStyle(document.documentElement).getPropertyValue('--gauge-empty').trim() || '#e0e0e0'
+        ],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      cutout: "75%",
+      plugins: {
+        tooltip: { enabled: false },
+        legend: { display: false },
+        title: {
+          display: true,
+          text: `Monthly Attendance: ${value}%`,
+          font: {
+            size: 16
+          }
+        }
+      }
+    }
+  });
+}
+
 
 });

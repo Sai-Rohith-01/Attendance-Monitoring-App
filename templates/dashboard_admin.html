@@ -119,6 +119,8 @@
 
 
 <!--Monthly KPI-->
+
+<!--Monthly KPI Row 1-->
 <div id="monthlyChartRow1" class="monthly-row" style="display:none">
   <div class="chart-card" id="attendanceTrendCard">
     <canvas id="attendanceTrendChart"></canvas>
@@ -127,6 +129,23 @@
     <canvas id="presenceSummaryChart"></canvas>
   </div>
 </div>
+
+
+<!-- ✅ Monthly KPI Row 2 -->
+<div class="monthly-row" id="monthlyChartRow2" style="display: none;">
+  <!-- Avg Attendance Chart -->
+  <div class="chart-card" id="avgAttendanceCard">
+    <canvas id="monthlyAvgAttendanceChart"></canvas>
+  </div>
+
+  <!-- Most Punctual Day Card -->
+  <div class="chart-card" id="mostPunctualCard">
+    <h3>Most Punctual Day</h3>
+    <p id="punctualDayText">--</p>
+    <p id="punctualTimeText" >Avg Punch-In: --</p>
+  </div>
+</div>
+
 
 
        

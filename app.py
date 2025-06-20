@@ -512,6 +512,118 @@ def get_monthly_presence_summary():
 
 
 
+
+
+@app.route('/get_monthly_avg_attendance')
+def get_monthly_avg_attendance():
+    if 'role' not in session or session.get('role') != 'admin':
+        print("[DEBUG] Unauthorized access attempt to /get_monthly_avg_attendance")
+        return jsonify({})
+
+    month_str = request.args.get('month')  # Expected format: 'YYYY-MM'
+    if not month_str:
+        print("[DEBUG] Missing month parameter in request")
+        return jsonify({})
+
+    try:
+        selected_month = pd.to_datetime(month_str + '-01')
+        print(f"[DEBUG] Selected Month: {selected_month.strftime('%Y-%m')}")
+
+        monthly_data = daily_summary[
+            (daily_summary['DATE_NEW'].dt.month == selected_month.month) &
+            (daily_summary['DATE_NEW'].dt.year == selected_month.year)
+        ].copy()
+
+        if monthly_data.empty:
+            print("[DEBUG] No records found for the selected month")
+            return jsonify({})
+
+        total_days = monthly_data['DATE_NEW'].nunique()
+        total_users = df['Userid'].nunique()
+        print(f"[DEBUG] Total Days in Month: {total_days}, Total Users: {total_users}")
+
+        # Calculate daily attendance %
+        monthly_data['daily_percent'] = (monthly_data['Userid'] / total_users) * 100
+        avg_attendance_percent = monthly_data['daily_percent'].mean()
+
+        print(f"[DEBUG] Monthly Average Attendance: {avg_attendance_percent:.2f}%")
+
+        return jsonify({
+            'avg_attendance_percent': round(avg_attendance_percent, 2)
+        })
+
+    except Exception as e:
+        print(f"[ERROR] Exception in /get_monthly_avg_attendance: {str(e)}")
+        return jsonify({})
+
+
+
+@app.route('/get_monthly_most_punctual_day')
+def get_monthly_most_punctual_day():
+    if 'role' not in session or session.get('role') != 'admin':
+        print("[DEBUG] Unauthorized access attempt to /get_monthly_most_punctual_day")
+        return jsonify({})
+
+    month_str = request.args.get('month')  # Expected format: 'YYYY-MM'
+    if not month_str:
+        print("[DEBUG] Missing month parameter in request")
+        return jsonify({})
+
+    try:
+        selected_month = pd.to_datetime(month_str + '-01')
+        print(f"[DEBUG] Selected Month: {selected_month.strftime('%Y-%m')}")
+
+        # Filter punch-in data for the selected month
+        monthly_punchins = clean_paired_df[
+            (clean_paired_df['DATE_NEW'].dt.month == selected_month.month) &
+            (clean_paired_df['DATE_NEW'].dt.year == selected_month.year)
+        ][['DATE_NEW', 'IN']].dropna().copy()
+
+        if monthly_punchins.empty:
+            print("[DEBUG] No punch-in data for selected month")
+            return jsonify({})
+
+        monthly_punchins['weekday'] = monthly_punchins['DATE_NEW'].dt.day_name()
+        monthly_punchins = monthly_punchins[~monthly_punchins['weekday'].isin(['Saturday', 'Sunday'])]
+
+        monthly_punchins['punch_in_minutes'] = (
+            monthly_punchins['IN'].dt.hour * 60 +
+            monthly_punchins['IN'].dt.minute
+        )
+
+        # Group by weekday and calculate average punch-in time
+        # Count entries per weekday
+        weekday_counts = monthly_punchins['weekday'].value_counts()
+        
+        # Only include weekdays with >= min_count punch-ins
+        min_count = 10  # You can adjust this threshold
+        valid_weekdays = weekday_counts[weekday_counts >= min_count].index
+        filtered = monthly_punchins[monthly_punchins['weekday'].isin(valid_weekdays)]
+        grouped = filtered.groupby('weekday')['punch_in_minutes'].median()
+        
+        if grouped.empty:
+            print("[DEBUG] No weekday-wise data found")
+            return jsonify({})
+        
+        most_punctual = grouped.idxmin()
+        avg_minutes = grouped.loc[most_punctual]
+        hh = int(avg_minutes // 60)
+        mm = int(avg_minutes % 60)
+        avg_punch_in = f"{hh:02d}:{mm:02d}"
+
+        print(f"[DEBUG] Most Punctual Day: {most_punctual} @ {avg_punch_in}")
+
+        return jsonify({
+            'most_punctual_day': most_punctual,
+            'avg_punch_in': avg_punch_in
+        })
+
+    except Exception as e:
+        print(f"[ERROR] Exception in /get_monthly_most_punctual_day: {str(e)}")
+        return jsonify({})
+
+
+
 # ========================================= MISCELLANEOUS ====================================
 
 @app.before_request
