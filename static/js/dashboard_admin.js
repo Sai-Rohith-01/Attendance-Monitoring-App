@@ -10,6 +10,10 @@ document.addEventListener('DOMContentLoaded', function () {
   const weeklyKPISection = document.getElementById('weeklyKPISection');
   const monthlyChartRow1 = document.getElementById('monthlyChartRow1');
   const monthlyChartRow2 = document.getElementById("monthlyChartRow2");
+  const monthlyRow3 = document.getElementById('monthlyRow3');  
+
+
+
 
   generateBtn.addEventListener('click', async () => {
     const selectedDate = datePicker.value;
@@ -26,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
     weeklyKPISection.style.display = "none";
     monthlyChartRow1.style.display = "none";
     monthlyChartRow2.style.display = "none";
+    monthlyRow3.style.display = "none";
 
     if (selectedVisual === "kpi") {
       if (viewMode === "Daily") {
@@ -46,10 +51,9 @@ document.addEventListener('DOMContentLoaded', function () {
           alert("Please select a month.");
           return;
         }
-        fetchMonthlyAttendanceTrend(selectedMonth);
-        fetchMonthlyPresenceSummary(selectedMonth);
+        await fetchMonthlyView(selectedMonth);
 
-        fetchMonthlyKPIBlock(selectedMonth);
+
 
 
       }
@@ -75,6 +79,17 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
   }
+
+  async function fetchMonthlyView(month) {
+  const trendSuccess = await fetchMonthlyAttendanceTrend(month);
+  const summarySuccess = await fetchMonthlyPresenceSummary(month);
+  const kpiSuccess = await fetchMonthlyKPIBlock(month);
+  const row3Success = await fetchMonthlyRow3Charts(month);
+
+  const allFail = !trendSuccess && !summarySuccess && !kpiSuccess && !row3Success;
+  
+}
+
 
   if (jarvisBtn) {
     jarvisBtn.addEventListener('click', () => {
@@ -150,14 +165,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
   let attendanceTrendChart;
   let presenceSummaryChart;
-
+  let presenceHoursChart;
+  let lateArrivalsChart;
   function fetchMonthlyAttendanceTrend(month) {
     fetch(`/get_monthly_attendance_trend?month=${month}`)
       .then(response => response.json())
       .then(data => {
         if (!data || !Array.isArray(data.dates) || data.dates.length === 0) {
           monthlyChartRow1.style.display = "none";
-          showError("No attendance trend data available for the selected month.");
           return;
         }
 
@@ -176,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function () {
       .catch(error => {
         monthlyChartRow1.style.display = "none";
         console.error("[ERROR] Attendance Trend:", error);
-        showError("Failed to load monthly attendance trend.");
+        
       });
   }
 
@@ -186,7 +201,6 @@ document.addEventListener('DOMContentLoaded', function () {
       .then(data => {
         if (!data || !Array.isArray(data.dates) || data.dates.length === 0) {
           monthlyChartRow1.style.display = "none";
-          showError("No presence summary data available for the selected month.");
           return;
         }
 
@@ -282,13 +296,25 @@ document.addEventListener('DOMContentLoaded', function () {
           },
           tooltip: {
             callbacks: {
-              label: context => `${context.dataset.label}: ${context.parsed.y || 0}`,
+              label: context => {
+                const total = context.chart.data.datasets.reduce((sum, dataset) => {
+                  return sum + (dataset.data[context.dataIndex] || 0);
+                }, 0);
+                const value = context.parsed.y || 0;
+                const percentage = total ? ((value / total) * 100).toFixed(1) : 0;
+                return `${context.dataset.label}: ${value} (${percentage}%)`;
+              },
               title: context => {
                 const [day, month, year] = context[0].label.split("-");
                 const fullDateStr = `20${year}-${month}-${day}`;
                 const dateObj = new Date(fullDateStr);
-                const options = { weekday: 'long' };
-                return `${new Intl.DateTimeFormat('en-US', options).format(dateObj)}, ${context[0].label}`;
+                if (isNaN(dateObj)) return context[0].label;
+                return dateObj.toLocaleDateString('en-GB', {
+                  weekday: 'long',
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric'
+                });
               }
             }
           }
@@ -312,12 +338,10 @@ function fetchMonthlyKPIBlock(month) {
       let valid = true;
 
       if (!avgData || typeof avgData.avg_attendance_percent !== "number") {
-        showError("No average attendance data for this month.");
         valid = false;
       }
 
       if (!punctualData || !punctualData.most_punctual_day || !punctualData.avg_punch_in) {
-        showError("No punctuality data found.");
         valid = false;
       }
 
@@ -335,7 +359,6 @@ function fetchMonthlyKPIBlock(month) {
     })
     .catch(err => {
       console.error("[ERROR] Monthly KPI Block:", err);
-      showError("Failed to load monthly KPI data.");
       monthlyChartRow2.style.display = "none";
     });
 }
@@ -379,4 +402,141 @@ function renderAvgAttendanceChart(value) {
 }
 
 
-});
+function fetchMonthlyRow3Charts(month) {
+  fetch(`/get_monthly_row3_data?month=${month}`)
+    .then(response => response.json())
+    .then(data => {
+      console.log("[Row 3 API Response]", data);
+
+      const row3 = document.getElementById('monthlyRow3');
+      const lateCard = document.getElementById('lateArrivalsCard');
+      const presenceCard = document.getElementById('presenceHoursCard');
+
+      let hasData = false;
+
+      // ========== Chart 1: Late Arrivals ==========
+      if (data.late_trend && data.late_trend.length > 0) {
+        hasData = true;
+        const lateLabels = data.late_trend.map(item => {
+          const d = new Date(item.DATE_NEW);
+          return d.toLocaleDateString('en-GB');
+        });
+        const lateData = data.late_trend.map(item => item.Late);
+
+        if (lateArrivalsChart) lateArrivalsChart.destroy();
+        const lateCtx = document.getElementById('lateArrivalsChart').getContext('2d');
+        lateArrivalsChart = new Chart(lateCtx, {
+          type: 'line',
+          data: {
+            labels: lateLabels,
+            datasets: [{
+              label: 'Late Arrivals',
+              data: lateData,
+              borderColor: 'rgba(255, 99, 132, 1)',
+              backgroundColor: 'rgba(255, 99, 132, 0.2)',
+              fill: true,
+              tension: 0.4
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              title: { display: true, text: 'Late Arrivals Trend' },
+              tooltip: {
+                callbacks: {
+                  title: context => {
+                    const [day, month, year] = context[0].label.split('/');
+                    const dateObj = new Date(`${year}-${month}-${day}`);
+                    const formattedDate = dateObj.toLocaleDateString('en-GB', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    }).replace(/ /g, '-').toUpperCase();
+                    const dayName = dateObj.toLocaleDateString('en-GB', {
+                      weekday: 'long'
+                    });
+                    return [formattedDate, dayName];  // ✅ Two lines in tooltip
+                    }
+                  }
+                }
+            },
+            scales: {
+              y: { beginAtZero: true },
+              x: { ticks: { autoSkip: true, maxTicksLimit: 10 } }
+            }
+          }
+        });
+
+        lateCard.style.display = "block";
+      } else {
+        lateCard.style.display = "none";
+      }
+
+      // ========== Chart 2: Presence Hours ==========
+      if (data.presence_trend && data.presence_trend.length > 0) {
+        hasData = true;
+        const presenceLabels = data.presence_trend.map(item => {
+          const d = new Date(item.DATE_NEW);
+          return d.toLocaleDateString('en-GB');
+        });
+        const presenceData = data.presence_trend.map(item => item.Presence_Hours);
+
+        if (presenceHoursChart) presenceHoursChart.destroy();
+        const presenceCtx = document.getElementById('presenceHoursChart').getContext('2d');
+        presenceHoursChart = new Chart(presenceCtx, {
+          type: 'line',
+          data: {
+            labels: presenceLabels,
+            datasets: [{
+              label: 'Avg. Presence Hours',
+              data: presenceData,
+              borderColor: getComputedStyle(document.documentElement).getPropertyValue('--presence-line').trim(),backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--presence-fill').trim(),
+              fill: true,
+              tension: 0.4
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              title: { display: true, text: 'Avg. Presence Hours Trend' },
+              tooltip: {
+                callbacks: {
+                  title: context => {
+                    const [day, month, year] = context[0].label.split('/');
+                    const dateObj = new Date(`${year}-${month}-${day}`);
+                    const formattedDate = dateObj.toLocaleDateString('en-GB', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    }).replace(/ /g, '-').toUpperCase();
+                    const dayName = dateObj.toLocaleDateString('en-GB', {
+                      weekday: 'long'
+                    });
+                    return [formattedDate, dayName];  // ✅ Two lines in tooltip
+                    }
+                  }
+                }
+              },
+              scales: {
+                y: { beginAtZero: true },
+                x: { ticks: { autoSkip: true, maxTicksLimit: 10 } }
+              }
+            }
+          });
+          
+          presenceCard.style.display = "block";
+        } else {
+          presenceCard.style.display = "none";
+        }
+        row3.style.display = hasData ? "flex" : "none";
+        if (!hasData) {
+          showError("No data available for Monthly Trends.");
+        }
+      })
+      .catch(err => {
+        console.error("[ERROR] Row 3 Charts:", err);
+        document.getElementById('monthlyRow3').style.display = "none";
+      });
+    }
+  
+  });

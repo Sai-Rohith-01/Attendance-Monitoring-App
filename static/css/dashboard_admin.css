@@ -528,15 +528,6 @@ header {
   margin-bottom: 30px;
 }
 
-/* Chart card style */
-.chart-card {
-  flex: 1;
-  background-color: #ffffff;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  min-height: 300px;
-}
 
 :root {
   --bar-present: #4caf50;
@@ -565,6 +556,7 @@ header {
   flex: 1;
   background-color: var(--card-bg, #fff);
   padding: 20px;
+  min-height: 300px;
   border-radius: 12px;
   box-shadow: var(--card-shadow, 0 2px 8px rgba(0,0,0,0.1));
   display: flex;
@@ -605,4 +597,17 @@ header {
   max-width: 250px;
   max-height: 250px;
 }
+
+.chart-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+  gap: 20px;
+}
+
+:root {
+  --presence-line: rgba(75, 192, 192, 1);
+  --presence-fill: rgba(75, 192, 192, 0.2);
+}
+
 

@@ -612,6 +612,8 @@ def get_monthly_most_punctual_day():
         avg_punch_in = f"{hh:02d}:{mm:02d}"
 
         print(f"[DEBUG] Most Punctual Day: {most_punctual} @ {avg_punch_in}")
+        
+
 
         return jsonify({
             'most_punctual_day': most_punctual,
@@ -621,6 +623,63 @@ def get_monthly_most_punctual_day():
     except Exception as e:
         print(f"[ERROR] Exception in /get_monthly_most_punctual_day: {str(e)}")
         return jsonify({})
+       
+# =================================== Monthly ROW 3 ==========================
+@app.route('/get_monthly_row3_data')
+def get_monthly_row3_data():
+    if 'role' not in session or session.get('role') != 'admin':
+        return jsonify({})
+
+    selected_month = request.args.get('month')
+    if not selected_month:
+        return jsonify({})
+
+    try:
+        month = pd.to_datetime(selected_month).month
+        year = pd.to_datetime(selected_month).year
+
+        # ====== Late Arrivals Trend ======
+        late_df = clean_paired_df.copy()
+        late_df['DATE_NEW'] = pd.to_datetime(late_df['DATE_NEW'])
+        late_df['IN'] = pd.to_datetime(late_df['IN'])
+
+        # Get first IN per user per day
+        first_in_df = late_df.sort_values(['Userid', 'DATE_NEW', 'IN']).groupby(['Userid', 'DATE_NEW'], as_index=False).first()
+
+        # Mark as late if first IN > 10:15 AM
+        late_time = pd.to_datetime('10:15:00').time()
+        first_in_df['Late'] = first_in_df['IN'].dt.time > late_time
+
+        # Filter by month/year
+        first_in_df = first_in_df[(first_in_df['DATE_NEW'].dt.month == month) & (first_in_df['DATE_NEW'].dt.year == year)]
+
+        # Daily total late count
+        late_trend = first_in_df.groupby('DATE_NEW')['Late'].sum().reset_index()
+
+        # ====== Avg. Presence Hours (Per user avg) ======
+        summary_df = daily_summary.copy()
+        summary_df['DATE_NEW'] = pd.to_datetime(summary_df['DATE_NEW'])
+
+        # Filter to selected month/year
+        presence_df = summary_df[(summary_df['DATE_NEW'].dt.month == month) & (summary_df['DATE_NEW'].dt.year == year)]
+
+        # Step 1: Calculate total hours per user per day (already present)
+        # Step 2: Average per day across users
+        per_day_avg_df = presence_df.groupby(['DATE_NEW', 'Userid'])['Presence_Hours'].sum().reset_index()
+
+        # Step 3: Average across users per day (final daily trend)
+        presence_trend = per_day_avg_df.groupby('DATE_NEW')['Presence_Hours'].mean().reset_index()
+
+        return jsonify({
+            'late_trend': late_trend.to_dict(orient='records'),
+            'presence_trend': presence_trend.to_dict(orient='records')
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+
+    
 
 
 
@@ -651,5 +710,6 @@ def refresh_data():
 # =============================================== MAIN ==================================
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
