@@ -21,18 +21,18 @@ CACHE_FILE = "preprocessed_data.pkl"
 
 # ========== GLOBAL DATAFRAMES ==========
 df = paired_df = clean_paired_df = None
-daily_summary = weekday_trends = final_scores = top_fair_users = None
+daily_summary =daily_attendance_summary= weekday_trends = final_scores = top_fair_users = None
 
 
 # ========== DATA PREPROCESSING ==========
 def preprocess_data():
-    global df, paired_df, clean_paired_df, daily_summary, weekday_trends, final_scores, top_fair_users
+    global df, paired_df, clean_paired_df, daily_summary,daily_attendance_summary, weekday_trends, final_scores, top_fair_users
 
     start_time = time.time()
 
     if os.path.exists(CACHE_FILE):
         with open(CACHE_FILE, 'rb') as f:
-            (df, paired_df, clean_paired_df, daily_summary, weekday_trends, final_scores, top_fair_users) = pickle.load(f)
+            (df, paired_df, clean_paired_df, daily_summary, weekday_trends, final_scores, top_fair_users,daily_attendance_summary) = pickle.load(f)
         print("✅ Loaded data from cache in", round(time.time() - start_time, 2), "seconds.")
         return
 
@@ -149,7 +149,7 @@ def preprocess_data():
     top_fair_users = user_stats.sort_values('Final_Score', ascending=False).head(10).round(2)
 
     with open(CACHE_FILE, 'wb') as f:
-        pickle.dump((df, paired_df, clean_paired_df, daily_summary, weekday_trends, final_scores, top_fair_users), f)
+        pickle.dump((df, paired_df, clean_paired_df, daily_summary, weekday_trends, final_scores, top_fair_users,daily_attendance_summary), f)
 
     print("✅ Preprocessing done in", round(time.time() - start_time, 2), "seconds.")
 
@@ -246,6 +246,8 @@ def get_kpi_data():
         filtered_df = paired_df.copy()
         filtered_df['DATE_NEW'] = pd.to_datetime(filtered_df['DATE_NEW']).dt.normalize()
         today_df = filtered_df[filtered_df['DATE_NEW'] == selected].copy()
+        if today_df.empty:
+            return jsonify({'error': 'No data found for the selected date.'})
 
         if today_df.empty:
             return jsonify({
@@ -349,6 +351,8 @@ def get_weekly_kpi_data():
             (daily_attendance_summary['DATE_NEW'] >= start_of_week) &
             (daily_attendance_summary['DATE_NEW'] <= end_of_week)
         ].copy()
+        if week_data.empty:
+            return jsonify({'error': 'No data found for the selected week.'})
 
         print("✅ Week Data Rows:", len(week_data))
 
@@ -419,7 +423,92 @@ def get_weekly_kpi_data():
         print(f"[ERROR] Weekly KPI generation failed: {e}")
         return jsonify({})
 
+# ========================================== Monthly KPI ================================
 
+@app.route('/get_monthly_attendance_trend')
+def get_monthly_attendance_trend():
+    if 'role' not in session or session.get('role') != 'admin':
+        print("[DEBUG] Unauthorized access to attendance trend route")
+        return jsonify({})
+
+    month_str = request.args.get('month')  # Expected format: 'YYYY-MM'
+    if not month_str:
+        print("[DEBUG] Missing month in request")
+        return jsonify({})
+
+    try:
+        selected_month = pd.to_datetime(month_str + '-01')
+        print(f"[DEBUG] Selected month: {selected_month.strftime('%Y-%m')}")
+
+        # ✅ Move this line after defining monthly_data
+        monthly_data = daily_attendance_summary[
+            (daily_attendance_summary['DATE_NEW'].dt.month == selected_month.month) &
+            (daily_attendance_summary['DATE_NEW'].dt.year == selected_month.year)
+        ].copy()
+        if monthly_data.empty:
+            return jsonify({'error': 'No data found for the selected month.'})
+        
+        print(f"[DEBUG] Filtered data has {len(monthly_data)} rows")
+        print("[DEBUG] Columns:", monthly_data.columns.tolist())
+
+        total_users = df['Userid'].nunique()
+
+        chart_data = {
+            'dates': monthly_data['DATE_NEW'].dt.strftime('%Y-%m-%d').tolist(),
+            'present_counts': monthly_data['Present'].tolist()
+        }
+
+        return jsonify(chart_data)
+
+    except Exception as e:
+        print(f"[DEBUG] Error in /get_monthly_attendance_trend: {str(e)}")
+        return jsonify({})
+
+
+
+
+
+
+@app.route('/get_monthly_presence_summary')
+def get_monthly_presence_summary():
+    if 'role' not in session or session.get('role') != 'admin':
+        print("[DEBUG] Unauthorized access to presence summary route")
+        return jsonify({})
+
+    month_str = request.args.get('month')  # Expected format: 'YYYY-MM'
+    if not month_str:
+        print("[DEBUG] Missing month in request")
+        return jsonify({})
+
+    try:
+        selected_month = pd.to_datetime(month_str + '-01')
+        print(f"[DEBUG] Selected month: {selected_month.strftime('%Y-%m')}")
+
+        # ✅ Define first, then log
+        monthly_data = daily_attendance_summary[
+            (daily_attendance_summary['DATE_NEW'].dt.month == selected_month.month) &
+            (daily_attendance_summary['DATE_NEW'].dt.year == selected_month.year)
+        ].copy()
+        if monthly_data.empty:
+            return jsonify({'error': 'No data found for the selected month.'})
+        
+        print(f"[DEBUG] Filtered data has {len(monthly_data)} rows")
+        print("[DEBUG] Columns:", monthly_data.columns.tolist())
+
+        total_users = df['Userid'].nunique()
+        monthly_data['Absent'] = total_users - monthly_data['Present']
+
+        chart_data = {
+            'dates': monthly_data['DATE_NEW'].dt.strftime('%Y-%m-%d').tolist(),
+            'present': monthly_data['Present'].tolist(),
+            'absent': monthly_data['Absent'].tolist()
+        }
+
+        return jsonify(chart_data)
+
+    except Exception as e:
+        print(f"[DEBUG] Error in /get_monthly_presence_summary: {str(e)}")
+        return jsonify({})
 
 
 

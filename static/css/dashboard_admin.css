@@ -520,6 +520,37 @@ header {
   margin-right: auto;
 }
 
+/* Row container for monthly charts */
+.monthly-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+/* Chart card style */
+.chart-card {
+  flex: 1;
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-height: 300px;
+}
+
+:root {
+  --bar-present: #4caf50;
+  --bar-absent: #f44336;
+  --line-border: #2196f3;
+  --line-fill: rgba(33, 150, 243, 0.1);
+}
+
+.chartjs-tooltip {
+  font-size: 13px;
+  color: #333;
+}
+
+
 
 
 

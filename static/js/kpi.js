@@ -18,12 +18,17 @@ document.addEventListener("DOMContentLoaded", () => {
   // ================= DAILY KPI =================
   window.loadKPIData = function (date) {
     setLoadingState(true, "daily");
+    kpiSection.style.display = "none";
     console.log("🔍 Fetching Daily KPI for:", date);
 
     fetch(`/get_kpi_data?date=${date}`)
       .then(res => res.json())
       .then(data => {
-        if (data.error) throw new Error(data.error);
+        if (!data || data.total_employees === 0) {
+          showError("No data found for the selected date.");
+          return;
+        }
+
 
         const idMap = {
           totalEmployees: data.total_employees,
@@ -49,6 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
         anomalyCard?.classList.toggle("threat", isThreat);
         anomalyCard?.classList.toggle("safe", !isThreat);
 
+        // ✅ Play JARVIS error audio only if anomaly is detected
         if (isThreat) {
           try {
             errorAudio.pause();
@@ -63,7 +69,8 @@ document.addEventListener("DOMContentLoaded", () => {
       })
       .catch(err => {
         console.error("Error fetching Daily KPI:", err);
-        alert("Failed to fetch KPI data.");
+        kpiSection.style.display = "none";
+        showError("Failed to fetch KPI data.");
       })
       .finally(() => setLoadingState(false, "daily"));
   };
@@ -71,7 +78,13 @@ document.addEventListener("DOMContentLoaded", () => {
   // ================= WEEKLY KPI =================
   window.renderWeeklyKPI = function (data) {
     setLoadingState(true, "weekly");
+
     try {
+      if (!data || !Array.isArray(data.attendance_by_day) || data.attendance_by_day.length === 0) {
+        weeklyKPISection.style.display = "none";
+        return showError("No weekly KPI data found for the selected date.");
+      }
+
       const avgAttendance = data.average_attendance_percent || '--';
       const punctualDay = data.most_punctual_day || {};
 
@@ -83,14 +96,28 @@ document.addEventListener("DOMContentLoaded", () => {
       if (punctualDayEl) punctualDayEl.textContent = punctualDay.day || '--';
       if (punctualTimeEl) punctualTimeEl.textContent = punctualDay.avg_punch_in || '--';
 
-      // 🔥 Force it to show even if CSS tries to hide it
-    weeklyKPISection.style.display = "flex";
-
+      weeklyKPISection.style.display = "flex";
       console.log("✅ Weekly KPI data rendered:", data);
     } catch (err) {
       console.error("Error rendering Weekly KPI:", err);
+      weeklyKPISection.style.display = "none";
+      showError("Failed to render Weekly KPI.");
     } finally {
       setLoadingState(false, "weekly");
     }
   };
+
+  function showError(message) {
+    let existing = document.getElementById("error-toast");
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.id = "error-toast";
+    toast.innerText = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      if (toast) toast.remove();
+    }, 3000);
+  }
 });
