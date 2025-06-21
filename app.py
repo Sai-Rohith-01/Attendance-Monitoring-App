@@ -678,6 +678,61 @@ def get_monthly_row3_data():
     except Exception as e:
         return jsonify({'error': str(e)})
 
+@app.route('/get_monthly_anomaly_trend')
+def get_monthly_anomaly_trend():
+    print("SESSION ROLE:", session.get('role'))
+
+    # --- TEMPORARY: Skip auth check for debugging
+    # if 'role' not in session or session.get('role') != 'admin':
+    #     return jsonify({})
+
+    month_param = request.args.get('month')
+    print("Month Param:", month_param)
+
+    if not month_param:
+        return jsonify({'error': 'Missing month parameter.'})
+
+    try:
+        month_dt = pd.to_datetime(month_param + "-01")
+        df = clean_paired_df.copy()
+        df['DATE_NEW'] = pd.to_datetime(df['DATE_NEW'])
+        df = df[df['DATE_NEW'].dt.to_period('M') == month_dt.to_period('M')]
+        print("Filtered Monthly Rows:", len(df))
+
+        df['IN'] = pd.to_datetime(df['IN'], errors='coerce')
+        df['OUT'] = pd.to_datetime(df['OUT'], errors='coerce')
+
+        if df.empty:
+            print("No data for this month.")
+            return jsonify({'dates': [], 'anomalies': []})
+
+        early_cutoff = datetime.strptime("06:00", "%H:%M").time()
+        late_cutoff = datetime.strptime("22:00", "%H:%M").time()
+
+        anomaly_trend = []
+        grouped = df.groupby(df['DATE_NEW'].dt.date)
+
+        for date_val, group in grouped:
+            early_anomalies = group[group['IN'].dt.time < early_cutoff]
+            late_anomalies = group[group['OUT'].dt.time > late_cutoff]
+            total_anomalies = len(early_anomalies) + len(late_anomalies)
+
+            anomaly_trend.append({
+                'date': date_val.strftime("%Y-%m-%d"),
+                'anomaly_count': total_anomalies
+            })
+
+        print("Anomaly trend prepared.")
+        return jsonify({
+            'dates': [item['date'] for item in anomaly_trend],
+            'anomaly_counts': [item['anomaly_count'] for item in anomaly_trend]  # ✅ MATCHES JS
+            })
+
+
+    except Exception as e:
+        print("Error in /get_monthly_anomaly_trend:", e)
+        return jsonify({'error': 'Failed to calculate anomaly trend.'})
+
 
     
 

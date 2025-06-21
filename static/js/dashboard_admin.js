@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', function () {
   const monthlyChartRow1 = document.getElementById('monthlyChartRow1');
   const monthlyChartRow2 = document.getElementById("monthlyChartRow2");
   const monthlyRow3 = document.getElementById('monthlyRow3');  
+  const monthlyRow4 = document.getElementById('monthlyRow4');
+
 
 
 
@@ -31,6 +33,7 @@ document.addEventListener('DOMContentLoaded', function () {
     monthlyChartRow1.style.display = "none";
     monthlyChartRow2.style.display = "none";
     monthlyRow3.style.display = "none";
+    monthlyRow4.style.display = "none";
 
     if (selectedVisual === "kpi") {
       if (viewMode === "Daily") {
@@ -85,8 +88,9 @@ document.addEventListener('DOMContentLoaded', function () {
   const summarySuccess = await fetchMonthlyPresenceSummary(month);
   const kpiSuccess = await fetchMonthlyKPIBlock(month);
   const row3Success = await fetchMonthlyRow3Charts(month);
+  const row4Success = await fetchMonthlyAnomalyChart(month);
 
-  const allFail = !trendSuccess && !summarySuccess && !kpiSuccess && !row3Success;
+  const allFail = !trendSuccess && !summarySuccess && !kpiSuccess && !row3Success && !row4Success;
   
 }
 
@@ -538,5 +542,91 @@ function fetchMonthlyRow3Charts(month) {
         document.getElementById('monthlyRow3').style.display = "none";
       });
     }
+
+  function fetchMonthlyAnomalyChart(month) {
+  return fetch(`/get_monthly_anomaly_trend?month=${month}`)
+    .then(res => res.json())
+    .then(data => {
+      console.log("[Row 4 Anomaly API Response]", data);  // Log the actual response
+
+      if (
+        !data || 
+        !Array.isArray(data.dates) || 
+        !Array.isArray(data.anomaly_counts) || 
+        data.dates.length === 0 || 
+        data.dates.length !== data.anomaly_counts.length
+      ) {
+        document.getElementById("monthlyRow4").style.display = "none";
+        return false;
+      }
+
+      document.getElementById("monthlyRow4").style.display = "flex";
+      renderAnomalyTrendChart(data);  // You must define this separately
+      return true;
+    })
+    .catch(err => {
+      console.error("[ERROR] Monthly Anomaly API:", err);
+      document.getElementById("monthlyRow4").style.display = "none";
+      return false;
+    });
+}
+let anomalyTrendChart;
+
+function renderAnomalyTrendChart(data) {
+  const ctx = document.getElementById('anomalyTrendChart').getContext('2d');
+  if (anomalyTrendChart) anomalyTrendChart.destroy();
+
+  anomalyTrendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.dates.map(dateStr => {
+        const [year, month, day] = dateStr.split("-");
+        return `${day}-${month}-${year.slice(2)}`;
+      }),
+      datasets: [{
+        label: 'Anomalies',
+        data: data.anomaly_counts,
+        borderColor: 'rgba(255, 165, 0, 1)',
+        backgroundColor: 'rgba(255, 165, 0, 0.3)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: 'Anomaly Trend Over Month'
+        },
+        tooltip: {
+          callbacks: {
+            label: context => `Anomalies: ${context.parsed.y}`,
+            title: context => {
+              const [day, month, year] = context[0].label.split("-");
+              const fullDateStr = `20${year}-${month}-${day}`;
+              const dateObj = new Date(fullDateStr);
+              const weekday = dateObj.toLocaleDateString('en-GB', { weekday: 'long' });
+              return `${weekday}, ${context[0].label}`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'Count' }
+        },
+        x: {
+          ticks: { autoSkip: true, maxTicksLimit: 10 },
+          title: { display: true, text: 'Date' }
+        }
+      }
+    }
+  });
+}
+  
   
   });
