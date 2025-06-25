@@ -5,27 +5,45 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin Dashboard</title>
 
-  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <!-- Fonts and Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+  
+  <!-- Main CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_admin.css') }}"/>
-  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
   <div class="dashboard-container">
+
     <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="logo"><i class="fa-solid fa-user-tie"></i> Welcome, Admin</div>
+     <aside class="sidebar">
+      <div class="logo">
+        <i class="fa-solid fa-user-tie"></i> Welcome, Admin
+      </div>
       <nav>
-        <ul>
-          <li class="active">📊 Dashboard</li>
-          <li>👥 Employees</li>
-          <li>📄 Reports</li>
-          <li>📈 Analytics</li>
+        <ul class="sidebar-menu">
+          <li class="sidebar-item active" id="navDashboard">
+            <span>📋 Dashboard</span>
+          </li>
+          <li class="sidebar-item" id="navEmployees">
+            <span>👥 Employees</span>
+          </li>
+          <li class="sidebar-item" id="navAnalytics">
+            <span>📈 Analytics</span>
+          </li>
+          <li class="sidebar-item" id="navReports">
+            <span>📄 Reports</span>
+          </li>
         </ul>
       </nav>
     </aside>
+
 
     <!-- Main content -->
     <main class="main-content">
@@ -34,7 +52,7 @@
           <h1>📋 Admin Dashboard</h1>
         </div>
 
-        <!-- Dropdown -->
+        <!-- Visualization Controls -->
         <div class="visualization-controls">
           <label for="visualSelect">Select Visualization:</label>
           <select id="visualSelect">
@@ -43,21 +61,22 @@
             <option value="pie">Pie Chart</option>
           </select>
         </div>
-        
+
         <!-- Date Picker -->
         <div class="date-container" id="datePickerSection">
           <label for="datePicker">📅</label>
           <input type="date" id="datePicker" />
-          
-          <!--View Dropdown-->
-          <select id="viewMode">
-            <option value="Daily" selected>Daily</option>
-            <option value="Weekly">Weekly</option>
-            <option value="Monthly">Monthly</option>
-          </select>
-          
 
-          <!--Generate-->
+          <!-- View Dropdown -->
+          <div id="viewModeContainer">
+            <select id="viewMode">
+              <option value="Daily">Daily</option>
+              <option value="Weekly">Weekly</option>
+              <option value="Monthly">Monthly</option>
+            </select>
+          </div>
+
+          <!-- Generate -->
           <button id="generateBtn" title="Generate Chart">⚡ Generate</button>
         </div>
 
@@ -68,116 +87,122 @@
       </header>
 
       <section>
-        
-        <!-- ✅ DAILY KPI SECTION -->
-<div id="kpiSection">
-  <div class="kpi-container" id="dailyKPIContainer">
-    <div class="kpi-card">
-      <h3>Total Employees</h3>
-      <p id="totalEmployees">--</p>
-    </div>
-    <div class="kpi-card">
-      <h3>Average Login</h3>
-      <p id="avgLogin">--</p>
-    </div>
-    <div class="kpi-card">
-      <h3>Mismatches Today</h3>
-      <p id="mismatchesToday">--</p>
-    </div>
-    <div class="kpi-card">
-      <h3>Earliest Login</h3>
-      <p id="earliestLogin">--</p>
-      <small id="earliestLoginUser">User: --</small>
-    </div>
-    <div class="kpi-card">
-      <h3>Last Logout</h3>
-      <p id="lastLogout">--</p>
-      <small id="lastLogoutUser">User: --</small>
-    </div>
-    <div class="kpi-card" id="anomalyCard">
-      <h3>⚠️ Anomalies</h3>
-      <p><strong>Early Logins:</strong> <span id="earlyLoginCount">--</span></p>
-      <small id="earlyLoginUsers">Users: --</small>
-      <p><strong>Late Logouts:</strong> <span id="lateLogoutCount">--</span></p>
-      <small id="lateLogoutUsers">Users: --</small>
-    </div>
-  </div>
-</div>
+        <!-- ✅ KPI SECTION -->
+        <div id="kpiSection">
+          <div class="kpi-container" id="dailyKPIContainer">
+            <div class="kpi-card">
+              <h3>Total Employees</h3>
+              <p id="totalEmployees">--</p>
+            </div>
+            <div class="kpi-card">
+              <h3>Average Login</h3>
+              <p id="avgLogin">--</p>
+            </div>
+            <div class="kpi-card">
+              <h3>Mismatches Today</h3>
+              <p id="mismatchesToday">--</p>
+            </div>
+            <div class="kpi-card">
+              <h3>Earliest Login</h3>
+              <p id="earliestLogin">--</p>
+              <small id="earliestLoginUser">User: --</small>
+            </div>
+            <div class="kpi-card">
+              <h3>Last Logout</h3>
+              <p id="lastLogout">--</p>
+              <small id="lastLogoutUser">User: --</small>
+            </div>
+            <div class="kpi-card" id="anomalyCard">
+              <h3>⚠️ Anomalies</h3>
+              <p><strong>Early Logins:</strong> <span id="earlyLoginCount">--</span></p>
+              <small id="earlyLoginUsers">Users: --</small>
+              <p><strong>Late Logouts:</strong> <span id="lateLogoutCount">--</span></p>
+              <small id="lateLogoutUsers">Users: --</small>
+            </div>
+          </div>
+        </div>
 
-<!-- ✅ WEEKLY KPI SECTION (Moved Outside) -->
-<div id="weeklyKPISection" class="kpi-container">
-  <div class="kpi-card" id="weeklyAvgAttendanceCard">
-    <h4>Avg Weekly Attendance</h4>
-    <p id="weeklyAvgAttendanceValue">--%</p>
-  </div>
-  <div class="kpi-card" id="mostPunctualDayCard">
-    <h4>Most Punctual Day</h4>
-    <p id="mostPunctualDayValue">--</p>
-    <p id="mostPunctualTimeValue" class="subtext">--</p>
-  </div>
-</div>
+        <!-- ✅ WEEKLY KPI SECTION -->
+        <div id="weeklyKPISection" class="kpi-container">
+          <div class="kpi-card" id="weeklyAvgAttendanceCard">
+            <h4>Avg Weekly Attendance</h4>
+            <p id="weeklyAvgAttendanceValue">--%</p>
+          </div>
+          <div class="kpi-card" id="mostPunctualDayCard">
+            <h4>Most Punctual Day</h4>
+            <p id="mostPunctualDayValue">--</p>
+            <p id="mostPunctualTimeValue" class="subtext">--</p>
+          </div>
+        </div>
 
+        <!-- ✅ Monthly KPI Row 1 -->
+        <div id="monthlyChartRow1" class="monthly-row" style="display:none">
+          <div class="chart-card" id="attendanceTrendCard">
+            <canvas id="attendanceTrendChart"></canvas>
+          </div>
+          <div class="chart-card" id="presenceSummaryCard">
+            <canvas id="presenceSummaryChart"></canvas>
+          </div>
+        </div>
 
-<!--Monthly KPI-->
+        <!-- ✅ Monthly KPI Row 2 -->
+        <div class="monthly-row" id="monthlyChartRow2" style="display: none;">
+          <div class="chart-card" id="avgAttendanceCard">
+            <canvas id="monthlyAvgAttendanceChart"></canvas>
+          </div>
+          <div class="chart-card" id="mostPunctualCard">
+            <h3>Most Punctual Day</h3>
+            <p id="punctualDayText">--</p>
+            <p id="punctualTimeText">Avg Punch-In: --</p>
+          </div>
+        </div>
 
-<!--Monthly KPI Row 1-->
-<div id="monthlyChartRow1" class="monthly-row" style="display:none">
-  <div class="chart-card" id="attendanceTrendCard">
-    <canvas id="attendanceTrendChart"></canvas>
-  </div>
-  <div class="chart-card" id="presenceSummaryCard">
-    <canvas id="presenceSummaryChart"></canvas>
-  </div>
-</div>
+        <!-- ✅ Monthly KPI Row 3 -->
+        <div id="monthlyRow3" class="chart-row" style="display:none">
+          <div class="chart-card" id="lateArrivalsCard">
+            <h3>Late Arrivals Trend</h3>
+            <canvas id="lateArrivalsChart"></canvas>
+          </div>
+          <div class="chart-card" id="presenceHoursCard">
+            <h3>Avg. Presence Hours Trend</h3>
+            <canvas id="presenceHoursChart"></canvas>
+          </div>
+        </div>
 
+        <!-- ✅ Monthly Anomaly Trend -->
+        <div id="monthlyRow4" class="row mt-4" style="display: none;">
+          <div class="col-md-12">
+            <div class="card shadow-sm p-3">
+              <h5 class="mb-3">Monthly Anomaly Trend</h5>
+              <canvas id="anomalyTrendChart" height="100"></canvas>
+            </div>
+          </div>
+        </div>
 
-<!-- ✅ Monthly KPI Row 2 -->
-<div class="monthly-row" id="monthlyChartRow2" style="display: none;">
-  <!-- Avg Attendance Chart -->
-  <div class="chart-card" id="avgAttendanceCard">
-    <canvas id="monthlyAvgAttendanceChart"></canvas>
-  </div>
+        <!-- ✅ Daily Pie Chart -->
+        <div id="dailyPieCard" class="pie-card" style="display: none;">
+          <h3 class="card-title">Punch-In Time Distribution</h3>
+          <div class="pie-chart-wrapper">
+            <canvas id="dailyPieChart" width="400" height="300"></canvas>
+          </div>
+        </div>
 
-  <!-- Most Punctual Day Card -->
-  <div class="chart-card" id="mostPunctualCard">
-    <h3>Most Punctual Day</h3>
-    <p id="punctualDayText">--</p>
-    <p id="punctualTimeText" >Avg Punch-In: --</p>
-  </div>
-</div>
+        <!-- 🔻 Employee Section (Initially hidden) -->
+        <div id="employeeSection" style="display: none;">
+          <h2>👥 Employee Directory</h2>
+          <div id="employeeContainer">
+            <!-- Employee data will be injected here via JS -->
+          </div>
+        </div>
 
-<!-- ROW 3: Monthly Trends -->
-<div id="monthlyRow3" class="chart-row" style="display:none">
-  <!-- Late Arrivals Trend -->
-  <div class="chart-card" id="lateArrivalsCard">
-    <h3>Late Arrivals Trend</h3>
-    <canvas id="lateArrivalsChart"></canvas>
-  </div>
+        <!-- 🔒 Reserved for Future Use -->
+        <div id="analyticsSection" style="display: none;">
+          <h2>📈 Analytics (Coming Soon)</h2>
+        </div>
 
-  <!-- Average Presence Hours Trend -->
-  <div class="chart-card" id="presenceHoursCard">
-    <h3>Avg. Presence Hours Trend</h3>
-    <canvas id="presenceHoursChart"></canvas>
-  </div>
-</div>
-
-<!-- Row 4: Monthly Anomaly Trend -->
-<div id="monthlyRow4" class="row mt-4" style="display: none;">
-  <div class="col-md-12">
-    <div class="card shadow-sm p-3">
-      <h5 class="mb-3">Monthly Anomaly Trend</h5>
-      <canvas id="anomalyTrendChart" height="100"></canvas>
-    </div>
-  </div>
-</div>
-
-
-
-
-       
-
-        <!-- Additional chart cards go here -->
-
+        <div id="reportsSection" style="display: none;">
+          <h2>📄 Reports (Coming Soon)</h2>
+        </div>
       </section>
     </main>
 
@@ -188,20 +213,19 @@
       </form>
     </div>
   </div>
-  
-
 
   <!-- JARVIS Icon -->
   <img src="{{ url_for('static', filename='Pictures/Arc_reactor.png') }}" id="jarvisBtn" title="Activate J.A.R.V.I.S." />
 
-  <!--Audio-->
+  <!-- Audio -->
   <audio id="jarvisWorking" src="/static/jarvis_working.mp3"></audio>
   <audio id="jarvisError" src="/static/jarvis_error.mp3"></audio>
 
   <!-- Scripts -->
-   <script src="{{ url_for('static', filename='js/kpi.js') }}"></script>
-   <script src="{{ url_for('static', filename='js/dashboard_admin.js') }}"></script>
-   <script src="{{ url_for('static', filename='js/pie.js') }}"></script>
-
+  <script src="{{ url_for('static', filename='js/kpi.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/dashboard_admin.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/pie.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/employees.js') }}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 </body>
 </html>

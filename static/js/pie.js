@@ -1,110 +1,163 @@
-let pieChart;
+let pieChartInstance = null;
 
-function loadPieChart(date) {
-    const chartCard = document.getElementById('chartCard');
-    const chartCanvas = document.getElementById('arrivalPieChart');
-    const chartCtx = chartCanvas.getContext('2d');
-    const loadingSpinner = document.getElementById('loadingSpinner');
+async function fetchDailyPieChart() {
+  const viewMode = document.getElementById("viewMode").value;
+  const selectedDate = document.getElementById("datePicker").value;
+  const pieCard = document.getElementById("dailyPieCard");
 
-    if (!date) return;
+  pieCard.style.display = "none";
+  if (viewMode !== "Daily") return;
 
-    chartCard.style.display = 'block';
-    loadingSpinner.classList.remove('hidden');
+  try {
+    const response = await fetch(`/get_daily_pie_data?date=${selectedDate}`);
+    const result = await response.json();
 
-    fetch(`/get_pie_data?date=${date}`)
-        .then(response => response.json())
-        .then(data => {
-            loadingSpinner.classList.add('hidden');
+    if (!result.data || result.data.length === 0) {
+      handlePieChartError();
+      return;
+    }
 
-            if (!data || data.length === 0) {
-                chartCard.style.display = 'none';
-                if (pieChart) pieChart.destroy();
-                showError("No attendance data. Please try another day.");
-                return;
-            }
+    // Standardize labels for sorting
+    const timeBinOrder = ["Before 9", "9-10", "10-11", "11-12", "12-1", "1-2", "After 2"];
+    result.data.sort((a, b) => {
+      const getKey = (label) => {
+        const trimmed = label.trim();
+        if (trimmed === "Before 9") return "Before 9";
+        if (trimmed === "After 2") return "After 2";
+        if (trimmed.includes("-")) {
+          const parts = trimmed.split("-").map(p => p.trim());
+          return `${parts[0]}-${parts[1]}`;
+        }
+        return trimmed;
+      };
+    return timeBinOrder.indexOf(getKey(a.label)) - timeBinOrder.indexOf(getKey(b.label));
+    });
+    
+    // Format labels for display
+    const formattedLabels = result.data.map(item => {
+      const bin = item.label.trim();
+      if (bin === "Before 9") return "Before 9:00";
+      if (bin === "After 2") return "After 2:00";
+      const [start, end] = bin.split("-").map(p => p.trim());
+      return `${start}:00 - ${end}:00`;
+    });
 
-            const labels = data.map(row => row['Time Interval']);
-            const counts = data.map(row => row['Employee Count']);
 
-            const suspiciousColor = '#ff3c3c';
-            const normalColors = [
-                '#4CAF50', '#2196F3', '#FFC107', '#FF9800',
-                '#9C27B0', '#00BCD4', '#8BC34A', '#FFEB3B',
-                '#795548', '#03A9F4', '#E91E63', '#CDDC39'
-            ];
+    const counts = result.data.map(item => item.count);
+    const percentages = result.data.map(item => item.percentage);
+    const backgroundColors = [
+      "#4CAF50", "#2196F3", "#FFC107", "#FF5722",
+      "#9C27B0", "#3F51B5", "#795548", "#00BCD4"
+    ];
 
-            const colors = labels.map(label => {
-                const timeRange = label.split('–');
-                if (timeRange.length === 2) {
-                    const startHour = parseInt(timeRange[0].split(':')[0]);
-                    const endHour = parseInt(timeRange[1].split(':')[0]);
-                    if (startHour < 6 || endHour > 18) return suspiciousColor;
+    // ✅ Show pie card before rendering
+    pieCard.style.display = "block";
+
+    // ✅ Wait for DOM to update before rendering chart
+    requestAnimationFrame(() => {
+      const ctx = document.getElementById("dailyPieChart").getContext("2d");
+
+      if (pieChartInstance) pieChartInstance.destroy();
+
+      const legendColor = getComputedStyle(document.documentElement).getPropertyValue('--pie-label-color').trim();
+
+      pieChartInstance = new Chart(ctx, {
+        type: "pie",
+        data: {
+          labels: formattedLabels,
+          datasets: [{
+            data: counts,
+            backgroundColor: backgroundColors.slice(0, formattedLabels.length),
+            borderWidth: 1,
+            borderColor: "#fff",
+            borderRadius: 6,
+            hoverOffset: 12
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: {
+            animateRotate: true,
+            animateScale: true,
+            duration: 1500,
+            easing: 'easeOutCirc'
+          },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  const label = context.label || "";
+                  const count = context.raw;
+                  const percent = percentages[context.dataIndex] || 0;
+                  return `${label}\n ${count} employees (${percent}%)`;
                 }
-                const base = normalColors[Math.floor(Math.random() * normalColors.length)];
-                return generateGradient(chartCtx, base);
-            });
-
-            if (pieChart) pieChart.destroy();
-
-            pieChart = new Chart(chartCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: counts,
-                        backgroundColor: colors,
-                        borderWidth: 2,
-                        borderColor: '#f0f0f0',
-                        hoverOffset: 12,
-                    }]
+              }
+            },
+            legend: {
+              position: 'right',
+              labels: {
+                boxWidth: 16,
+                padding: 10,
+                color: legendColor,
+                font: {
+                  size: 13,
+                  weight: '500'
                 },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: context => `${context.label}: ${context.parsed} employees`
-                            }
-                        }
-                    },
-                    cutout: '50%',
-                    animation: {
-                        animateRotate: true,
-                        animateScale: true
-                    }
+                generateLabels: function (chart) {
+                  const data = chart.data;
+                  if (data.labels.length && data.datasets.length) {
+                    return data.labels.map((label, i) => {
+                      const backgroundColor = data.datasets[0].backgroundColor[i];
+                      return {
+                        text: label,
+                        fillStyle: backgroundColor,
+                        strokeStyle: "#fff",
+                        lineWidth: 1,
+                        hidden: false,
+                        index: i
+                      };
+                    });
+                  }
+                  return [];
                 }
-            });
-        })
-        .catch(err => {
-            loadingSpinner.classList.add('hidden');
-            chartCard.style.display = 'none';
-            showError("Error loading data. Please try again later.");
-            console.error(err);
-        });
+              }
+            },
+            title: {
+              display: true,
+              text: 'Attendance In-Time Statistics',
+              font: {
+                size: 18,
+                weight: 'bold'
+              }
+            }
+          },
+          layout: {
+            padding: 10
+          }
+        }
+      });
+
+      // ✅ Explicit resize for safety
+      pieChartInstance.resize();
+    });
+
+  } catch (error) {
+    console.error("Error fetching pie chart:", error);
+    handlePieChartError();
+  }
 }
 
-function generateGradient(ctx, baseColor) {
-    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, baseColor);
-    gradient.addColorStop(0.5, 'white');
-    gradient.addColorStop(1, baseColor);
-    return gradient;
+function handlePieChartError() {
+  const pieCard = document.getElementById("dailyPieCard");
+  pieCard.style.display = "none";
+  Toastify({
+    text: "No punch-in data available for the selected date.",
+    duration: 3000,
+    gravity: "top", // must be set, but will be overridden by custom style
+    position: "center",
+    backgroundColor: "#ff6b6b",
+    close: true,
+    className: "center-toast" // 👈 Add this custom class
+  }).showToast();
 }
-
-function showError(message) {
-    let existing = document.getElementById("error-toast");
-    if (existing) existing.remove();
-
-    const toast = document.createElement('div');
-    toast.id = "error-toast";
-    toast.innerText = message;
-    document.body.appendChild(toast);
-
-    setTimeout(() => {
-        if (toast) toast.remove();
-    }, 3000);
-}
-
-// ✅ Expose function globally so kpi.js can trigger it
-window.loadPieChart = loadPieChart;

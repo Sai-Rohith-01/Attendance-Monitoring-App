@@ -1,4 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from collections import defaultdict
+import numpy as np
 import pandas as pd
 import os
 import pickle
@@ -756,8 +758,63 @@ def refresh_data():
     preprocess_data()
     return "✅ Data cache refreshed."
 
+@app.route('/get_daily_pie_data')
+def get_daily_pie_data():
+    if 'role' not in session or session.get('role') != 'admin':
+        return jsonify({})
+
+    selected_date = request.args.get('date')
+    if not selected_date:
+        return jsonify({'error': 'No date provided'}), 400
+
+    try:
+        selected_date = pd.to_datetime(selected_date).normalize()
+
+        df_filtered = clean_paired_df[clean_paired_df['DATE_NEW'] == selected_date].copy()
+        df_filtered = df_filtered.dropna(subset=['IN'])  # ensure IN time is present
+
+        def categorize_punch_in(time):
+            hour = time.hour
+            if hour < 9:
+                return 'Before 9'
+            elif 9 <= hour < 10:
+                return '9 - 10'
+            elif 10 <= hour < 11:
+                return '10 - 11'
+            elif 11 <= hour < 12:
+                return '11 - 12'
+            elif 12 <= hour < 13:
+                return '12 - 1'
+            elif 13 <= hour < 14:
+                return '1 - 2'
+            else:
+                return 'After 2'
+
+        df_filtered['Time_Bin'] = df_filtered['IN'].apply(categorize_punch_in)
+
+        bin_counts = df_filtered['Time_Bin'].value_counts().sort_index()
+        total = bin_counts.sum()
+
+        pie_data = []
+        for bin_label, count in bin_counts.items():
+            percent = round((count / total) * 100, 2) if total > 0 else 0
+            pie_data.append({
+                'label': bin_label,
+                'count': count,
+                'percentage': percent
+            })
+
+        return jsonify({'data': pie_data})
+
+    except Exception as e:
+        print("Error in /get_daily_pie_data:", str(e))
+        return jsonify({'error': 'Server error'}), 500
 
 
+
+
+# print("weekday_trends columns:", weekday_trends.columns.tolist())
+# print("clean_paired_df columns:", clean_paired_df.columns.tolist())
 
 
 

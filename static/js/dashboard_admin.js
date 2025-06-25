@@ -18,53 +18,64 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
   generateBtn.addEventListener('click', async () => {
-    const selectedDate = datePicker.value;
-    const selectedVisual = visualSelect.value;
-    const viewMode = document.getElementById("viewMode").value;
+  const selectedDate = datePicker.value;
+  const selectedVisual = visualSelect.value;
+  const viewMode = document.getElementById("viewMode").value;
 
-    if (!selectedDate) return showError("Please select a valid date.");
-    if (!selectedVisual) return showError("Please select a visualization type.");
+  if (!selectedDate) return showError("Please select a valid date.");
+  if (!selectedVisual) return showError("Please select a visualization type.");
 
-    await playJarvisProcessing();
+  await playJarvisProcessing();
 
-    // Hide all sections
-    kpiSection.style.display = "none";
-    weeklyKPISection.style.display = "none";
-    monthlyChartRow1.style.display = "none";
-    monthlyChartRow2.style.display = "none";
-    monthlyRow3.style.display = "none";
-    monthlyRow4.style.display = "none";
+  // Hide all sections
+  kpiSection.style.display = "none";
+  weeklyKPISection.style.display = "none";
+  monthlyChartRow1.style.display = "none";
+  monthlyChartRow2.style.display = "none";
+  monthlyRow3.style.display = "none";
+  monthlyRow4.style.display = "none";
+  dailyPieCard.style.display = "none";
+  
 
-    if (selectedVisual === "kpi") {
-      if (viewMode === "Daily") {
-        if (typeof loadKPIData === 'function') {
-          loadKPIData(selectedDate);
-        } else {
-          console.error("❌ loadKPIData function not found.");
-        }
-      } else if (viewMode === "Weekly") {
-        if (typeof fetchWeeklyKPI === 'function') {
-          fetchWeeklyKPI(selectedDate);
-        } else {
-          console.error("❌ fetchWeeklyKPI function not found.");
-        }
-      } else if (viewMode === "Monthly") {
-        const selectedMonth = selectedDate.slice(0, 7); // 'YYYY-MM'
-        if (!selectedMonth) {
-          alert("Please select a month.");
-          return;
-        }
-        await fetchMonthlyView(selectedMonth);
-
-
-
-
+  if (selectedVisual === "kpi") {
+    if (viewMode === "Daily") {
+      if (typeof loadKPIData === 'function') {
+        loadKPIData(selectedDate);
+      } else {
+        console.error("❌ loadKPIData function not found.");
       }
+    } else if (viewMode === "Weekly") {
+      if (typeof fetchWeeklyKPI === 'function') {
+        fetchWeeklyKPI(selectedDate);
+      } else {
+        console.error("❌ fetchWeeklyKPI function not found.");
+      }
+    } else if (viewMode === "Monthly") {
+      const selectedMonth = selectedDate.slice(0, 7); // 'YYYY-MM'
+      if (!selectedMonth) {
+        alert("Please select a month.");
+        return;
+      }
+      await fetchMonthlyView(selectedMonth);
     }
+  }
 
-    console.log("Selected Visual:", selectedVisual);
-    console.log("View Mode:", viewMode);
-  });
+  else if (selectedVisual === "pie") {
+    if (viewMode === "Daily") {
+      if (typeof fetchDailyPieChart === 'function') {
+        fetchDailyPieChart(selectedDate);
+      } else {
+        console.error("❌ fetchDailyPieChart function not found.");
+      }
+    }  else {
+      showError("Invalid view mode for Pie chart.");
+    }
+  }
+
+  console.log("Selected Visual:", selectedVisual);
+  console.log("View Mode:", viewMode);
+});
+
 
   toggleButton.addEventListener('click', () => {
     rootElement.classList.toggle('dark-mode');
@@ -626,7 +637,7 @@ function renderAnomalyTrendChart(data) {
       }
     }
   });
-}
-  
+}  
+
   
   });

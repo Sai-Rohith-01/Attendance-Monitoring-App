@@ -565,6 +565,7 @@ header {
   justify-content: center;
 }
 
+
 #mostPunctualCard h3 {
   font-size: 30px;
   margin-bottom: 8px;
@@ -635,4 +636,89 @@ header {
   height: auto !important;
 }
 
+
+/* ========== PIE CARD CONTAINER ========== */
+.pie-card {
+  background-color: var(--pie-bg);
+  color: var(--pie-text);
+  padding: 20px;
+  border-radius: 20px;
+  box-shadow: 0 8px 20px var(--pie-shadow);
+  margin: 25px auto 0;
+  max-width: 600px;
+  animation: fadeSlideIn 0.8s ease-out;
+  transform: scale(1);
+  transition: transform 0.3s ease;
+}
+
+.pie-card:hover {
+  transform: scale(1.05);
+}
+
+/* ========== PIE CHART WRAPPER ========== */
+.pie-chart-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  height: 300px; /* ✅ Absolutely required when aspect ratio is disabled */
+  margin: 0 auto;
+}
+
+#dailyPieChart {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+
+/* ========== PIE TITLE ========== */
+.pie-card .card-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--pie-text);
+  text-align: center;
+}
+
+/* ========== THEME VARIABLES ========== */
+:root {
+  --pie-bg: rgba(255, 255, 255, 0.6);
+  --pie-text: #222;
+  --pie-label-color:white;
+  --pie-shadow: rgba(0, 0, 0, 0.08);
+}
+
+.dark-mode {
+  --pie-bg: rgba(34, 34, 34, 0.6);
+  --pie-text: #f0f0f0;
+  --pie-label-color:white;
+  --pie-shadow: rgba(255, 255, 255, 0.06);
+}
+
+
+/* ========== ENTRY ANIMATION ========== */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Centered toast styling */
+.center-toast {
+  /* position: fixed !important; */
+  top: 50% !important;
+  left: 40% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 9999 !important;
+  padding: 12px 20px !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  text-align: center !important;
+}
 
