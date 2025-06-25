@@ -237,6 +237,10 @@ header {
 
 /* Dark Mode Toggle Button */
 .dark-mode-toggle {
+    position: fixed;            /* So it stays at the top-right regardless of scroll */
+    top: 20px;
+    right: 20px;
+    z-index: 999;               /* Ensure it stays above all content */
     padding: 8px 12px;
     background-color: #555;
     color: #fff;
@@ -251,6 +255,7 @@ header {
 .dark-mode-toggle:hover {
     background-color: #333;
 }
+
 
 /* Align date picker and toggle in same row */
 .header-controls {
@@ -722,3 +727,9 @@ header {
   text-align: center !important;
 }
 
+.sidebar-item.active {
+  background-color: var(--active-bg, #e0e0e0);
+  font-weight: bold;
+  border-left: 4px solid var(--accent-color, #4CAF50);
+  color:  white;
+}

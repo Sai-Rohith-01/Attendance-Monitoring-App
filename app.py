@@ -812,11 +812,77 @@ def get_daily_pie_data():
 
 
 
+# ====================================EMPLOYEES SECTION =============================
 
-# print("weekday_trends columns:", weekday_trends.columns.tolist())
-# print("clean_paired_df columns:", clean_paired_df.columns.tolist())
+@app.route('/employees')
+def employees():
+    if 'role' not in session or session.get('role') != 'admin':
+        return redirect(url_for('login'))
+    return render_template('dashboard_admin.html')  # or separate employees.html if preferred
 
 
+
+@app.route('/get_all_employees')
+def get_all_employees():
+    # if 'role' not in session or session.get('role') != 'admin':
+    #     return jsonify({'error': 'Unauthorized'}), 403
+
+    try:
+        # Compute from daily_summary
+        summary = (
+            daily_summary.groupby('Userid')
+            .agg(
+                Total_Hours=('Presence_Hours', 'sum'),
+                Total_Days=('DATE_NEW', 'nunique')
+            )
+            .assign(
+                Avg_Presence_Hours=lambda df: (df['Total_Hours'] / df['Total_Days']).round(2)
+            )
+            .reset_index()
+            .sort_values(by='Userid')
+        )
+
+        # Drop total hours
+        summary.drop(columns=['Total_Hours'], inplace=True)
+
+        # Rename and reorder columns
+        summary.rename(columns={'Userid': 'EmployeeID'}, inplace=True)
+        summary = summary[['EmployeeID', 'Avg_Presence_Hours', 'Total_Days']]
+
+        print(f"[DEBUG] get_all_employees → {len(summary)} records returned.")
+        return jsonify(summary.to_dict(orient='records'))
+
+    except Exception as e:
+        import traceback
+        print("[ERROR] get_all_employees failed:", traceback.format_exc())
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+
+@app.route('/get_performance_scores')
+def get_performance_scores():
+    try:
+        performance = top_fair_users.copy()
+        performance.rename(columns={'Userid': 'EmployeeID', 'Avg_Hours': 'Avg_Presence_Hours', 'Days_Worked': 'Total_Days'}, inplace=True)
+        performance = performance[['EmployeeID', 'Avg_Presence_Hours', 'Total_Days', 'Final_Score']]
+        return jsonify(performance.to_dict(orient='records'))
+    except Exception as e:
+        import traceback
+        print("[ERROR] get_performance_scores failed:", traceback.format_exc())
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+
+
+
+
+
+
+
+
+# print(final_scores.columns.tolist())
+# print(top_fair_users.columns.tolist())
+# print("Unique users in top_fair_users:", top_fair_users['Userid'].nunique())
 
 
 # =============================================== MAIN ==================================

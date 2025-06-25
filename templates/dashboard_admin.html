@@ -8,12 +8,13 @@
   <!-- Fonts and Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_admin.css') }}"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/employees.css') }}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-  
-  <!-- Main CSS -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_admin.css') }}"/>
-  
+
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -22,191 +23,256 @@
   <div class="dashboard-container">
 
     <!-- Sidebar -->
-     <aside class="sidebar">
+    <aside class="sidebar">
       <div class="logo">
-        <i class="fa-solid fa-user-tie"></i> Welcome, Admin
+        <i class="fa-solid fa-user-tie"></i> <span>Welcome, Admin</span>
       </div>
       <nav>
         <ul class="sidebar-menu">
-          <li class="sidebar-item active" id="navDashboard">
-            <span>📋 Dashboard</span>
-          </li>
-          <li class="sidebar-item" id="navEmployees">
-            <span>👥 Employees</span>
-          </li>
-          <li class="sidebar-item" id="navAnalytics">
-            <span>📈 Analytics</span>
-          </li>
-          <li class="sidebar-item" id="navReports">
-            <span>📄 Reports</span>
-          </li>
+          <li class="sidebar-item active" id="dashboardBtn">📊 Dashboard</li>
+          <li class="sidebar-item" id="employeesBtn">👥 Employees</li>
+          <li class="sidebar-item" id="analyticsBtn">📈 Analytics</li>
+          <li class="sidebar-item" id="reportsBtn">📄 Reports</li>
         </ul>
       </nav>
     </aside>
 
+    <!-- 🌙 Global Dark Mode Toggle -->
+       <div id="globalDarkToggle">
+        <button id="darkModeToggle" title="Toggle Dark Mode">🌙</button>
+      </div>
 
     <!-- Main content -->
     <main class="main-content">
-      <header class="dashboard-header">
-        <div class="header-left">
-          <h1>📋 Admin Dashboard</h1>
+
+      <!-- ✅ DASHBOARD SECTION -->
+      <div id="dashboardSection">
+        <div id="dashboardHeader">
+          <header class="dashboard-header">
+            <div class="header-left">
+              <h1>📋 Admin Dashboard</h1>
+            </div>
+
+            <!-- Dashboard Controls -->
+            <div id="dashboardControls" style="display: flex; align-items: center; gap: 20px;">
+              <div class="visualization-controls">
+                <label for="visualSelect">Select Visualization:</label>
+                <select id="visualSelect">
+                  <option value="" disabled selected>-- Choose --</option>
+                  <option value="kpi">KPI Summary</option>
+                  <option value="pie">Pie Chart</option>
+                </select>
+              </div>
+
+              <div class="date-container" id="datePickerSection">
+                <label for="datePicker">📅</label>
+                <input type="date" id="datePicker" />
+                <div id="viewModeContainer">
+                  <select id="viewMode">
+                    <option value="Daily">Daily</option>
+                    <option value="Weekly">Weekly</option>
+                    <option value="Monthly">Monthly</option>
+                  </select>
+                </div>
+                <button id="generateBtn" title="Generate Chart">⚡ Generate</button>
+              </div>
+            </div>
+          </header>
         </div>
 
-        <!-- Visualization Controls -->
-        <div class="visualization-controls">
-          <label for="visualSelect">Select Visualization:</label>
-          <select id="visualSelect">
-            <option value="" disabled selected>-- Choose --</option>
-            <option value="kpi">KPI Summary</option>
-            <option value="pie">Pie Chart</option>
-          </select>
-        </div>
-
-        <!-- Date Picker -->
-        <div class="date-container" id="datePickerSection">
-          <label for="datePicker">📅</label>
-          <input type="date" id="datePicker" />
-
-          <!-- View Dropdown -->
-          <div id="viewModeContainer">
-            <select id="viewMode">
-              <option value="Daily">Daily</option>
-              <option value="Weekly">Weekly</option>
-              <option value="Monthly">Monthly</option>
-            </select>
-          </div>
-
-          <!-- Generate -->
-          <button id="generateBtn" title="Generate Chart">⚡ Generate</button>
-        </div>
-
-        <!-- Dark Mode Toggle -->
-        <button id="darkModeToggle" title="Toggle Dark Mode" style="padding: 8px 12px; border-radius: 8px; border: none; cursor: pointer;">
-          🌙
-        </button>
-      </header>
-
-      <section>
-        <!-- ✅ KPI SECTION -->
-        <div id="kpiSection">
-          <div class="kpi-container" id="dailyKPIContainer">
-            <div class="kpi-card">
-              <h3>Total Employees</h3>
-              <p id="totalEmployees">--</p>
-            </div>
-            <div class="kpi-card">
-              <h3>Average Login</h3>
-              <p id="avgLogin">--</p>
-            </div>
-            <div class="kpi-card">
-              <h3>Mismatches Today</h3>
-              <p id="mismatchesToday">--</p>
-            </div>
-            <div class="kpi-card">
-              <h3>Earliest Login</h3>
-              <p id="earliestLogin">--</p>
-              <small id="earliestLoginUser">User: --</small>
-            </div>
-            <div class="kpi-card">
-              <h3>Last Logout</h3>
-              <p id="lastLogout">--</p>
-              <small id="lastLogoutUser">User: --</small>
-            </div>
-            <div class="kpi-card" id="anomalyCard">
-              <h3>⚠️ Anomalies</h3>
-              <p><strong>Early Logins:</strong> <span id="earlyLoginCount">--</span></p>
-              <small id="earlyLoginUsers">Users: --</small>
-              <p><strong>Late Logouts:</strong> <span id="lateLogoutCount">--</span></p>
-              <small id="lateLogoutUsers">Users: --</small>
+        <section>
+          <!-- KPI Section -->
+          <div id="kpiSection">
+            <div class="kpi-container" id="dailyKPIContainer">
+              <div class="kpi-card"><h3>Total Employees</h3><p id="totalEmployees">--</p></div>
+              <div class="kpi-card"><h3>Average Login</h3><p id="avgLogin">--</p></div>
+              <div class="kpi-card"><h3>Mismatches Today</h3><p id="mismatchesToday">--</p></div>
+              <div class="kpi-card"><h3>Earliest Login</h3><p id="earliestLogin">--</p><small id="earliestLoginUser">User: --</small></div>
+              <div class="kpi-card"><h3>Last Logout</h3><p id="lastLogout">--</p><small id="lastLogoutUser">User: --</small></div>
+              <div class="kpi-card" id="anomalyCard">
+                <h3>⚠️ Anomalies</h3>
+                <p><strong>Early Logins:</strong> <span id="earlyLoginCount">--</span></p>
+                <small id="earlyLoginUsers">Users: --</small>
+                <p><strong>Late Logouts:</strong> <span id="lateLogoutCount">--</span></p>
+                <small id="lateLogoutUsers">Users: --</small>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- ✅ WEEKLY KPI SECTION -->
-        <div id="weeklyKPISection" class="kpi-container">
-          <div class="kpi-card" id="weeklyAvgAttendanceCard">
-            <h4>Avg Weekly Attendance</h4>
-            <p id="weeklyAvgAttendanceValue">--%</p>
+          <!-- Weekly KPI -->
+          <div id="weeklyKPISection" class="kpi-container">
+            <div class="kpi-card"><h4>Avg Weekly Attendance</h4><p id="weeklyAvgAttendanceValue">--%</p></div>
+            <div class="kpi-card"><h4>Most Punctual Day</h4><p id="mostPunctualDayValue">--</p><p id="mostPunctualTimeValue" class="subtext">--</p></div>
           </div>
-          <div class="kpi-card" id="mostPunctualDayCard">
-            <h4>Most Punctual Day</h4>
-            <p id="mostPunctualDayValue">--</p>
-            <p id="mostPunctualTimeValue" class="subtext">--</p>
-          </div>
-        </div>
 
-        <!-- ✅ Monthly KPI Row 1 -->
-        <div id="monthlyChartRow1" class="monthly-row" style="display:none">
-          <div class="chart-card" id="attendanceTrendCard">
-            <canvas id="attendanceTrendChart"></canvas>
+          <!-- Monthly Charts -->
+          <div id="monthlyChartRow1" class="monthly-row" style="display:none">
+            <div class="chart-card"><canvas id="attendanceTrendChart"></canvas></div>
+            <div class="chart-card"><canvas id="presenceSummaryChart"></canvas></div>
           </div>
-          <div class="chart-card" id="presenceSummaryCard">
-            <canvas id="presenceSummaryChart"></canvas>
-          </div>
-        </div>
 
-        <!-- ✅ Monthly KPI Row 2 -->
-        <div class="monthly-row" id="monthlyChartRow2" style="display: none;">
-          <div class="chart-card" id="avgAttendanceCard">
-            <canvas id="monthlyAvgAttendanceChart"></canvas>
+          <div class="monthly-row" id="monthlyChartRow2" style="display: none;">
+            <div class="chart-card"><canvas id="monthlyAvgAttendanceChart"></canvas></div>
+            <div class="chart-card"><h3>Most Punctual Day</h3><p id="punctualDayText">--</p><p id="punctualTimeText">Avg Punch-In: --</p></div>
           </div>
-          <div class="chart-card" id="mostPunctualCard">
-            <h3>Most Punctual Day</h3>
-            <p id="punctualDayText">--</p>
-            <p id="punctualTimeText">Avg Punch-In: --</p>
-          </div>
-        </div>
 
-        <!-- ✅ Monthly KPI Row 3 -->
-        <div id="monthlyRow3" class="chart-row" style="display:none">
-          <div class="chart-card" id="lateArrivalsCard">
-            <h3>Late Arrivals Trend</h3>
-            <canvas id="lateArrivalsChart"></canvas>
+          <div id="monthlyRow3" class="chart-row" style="display:none">
+            <div class="chart-card"><h3>Late Arrivals Trend</h3><canvas id="lateArrivalsChart"></canvas></div>
+            <div class="chart-card"><h3>Avg. Presence Hours Trend</h3><canvas id="presenceHoursChart"></canvas></div>
           </div>
-          <div class="chart-card" id="presenceHoursCard">
-            <h3>Avg. Presence Hours Trend</h3>
-            <canvas id="presenceHoursChart"></canvas>
-          </div>
-        </div>
 
-        <!-- ✅ Monthly Anomaly Trend -->
-        <div id="monthlyRow4" class="row mt-4" style="display: none;">
-          <div class="col-md-12">
-            <div class="card shadow-sm p-3">
-              <h5 class="mb-3">Monthly Anomaly Trend</h5>
-              <canvas id="anomalyTrendChart" height="100"></canvas>
+          <div id="monthlyRow4" class="row mt-4" style="display: none;">
+            <div class="col-md-12">
+              <div class="card shadow-sm p-3">
+                <h5 class="mb-3">Monthly Anomaly Trend</h5>
+                <canvas id="anomalyTrendChart" height="100"></canvas>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- ✅ Daily Pie Chart -->
-        <div id="dailyPieCard" class="pie-card" style="display: none;">
-          <h3 class="card-title">Punch-In Time Distribution</h3>
-          <div class="pie-chart-wrapper">
-            <canvas id="dailyPieChart" width="400" height="300"></canvas>
+          <!-- Pie Chart -->
+          <div id="dailyPieCard" class="pie-card" style="display: none;">
+            <h3 class="card-title">Punch-In Time Distribution</h3>
+            <div class="pie-chart-wrapper">
+              <canvas id="dailyPieChart" width="400" height="300"></canvas>
+            </div>
           </div>
-        </div>
+        </section>
+      </div>
 
-        <!-- 🔻 Employee Section (Initially hidden) -->
-        <div id="employeeSection" style="display: none;">
-          <h2>👥 Employee Directory</h2>
-          <div id="employeeContainer">
-            <!-- Employee data will be injected here via JS -->
-          </div>
-        </div>
+      <!-- ✅ EMPLOYEE SECTION -->
+<div id="employeeSection" style="display: none;">
+  <h2>👥 Employee Directory</h2>
 
-        <!-- 🔒 Reserved for Future Use -->
-        <div id="analyticsSection" style="display: none;">
-          <h2>📈 Analytics (Coming Soon)</h2>
-        </div>
+  <!-- Top Controls -->
+  <div class="employee-controls">
+    <button class="employee-toggle" id="employeeDirectoryToggle" data-target="employeeDirectory">Employee Presence Summary</button>
+    <button class="employee-toggle" id="leaveRequestsToggle" data-target="leaveRequests">Leave Requests</button>
+    <button class="employee-toggle" id="performanceSectionToggle" data-target="performanceSection">Performance Stats</button>
+    <button class="employee-toggle" id="flaggedSectionToggle" data-target="flaggedSection">Flagged</button>
 
-        <div id="reportsSection" style="display: none;">
-          <h2>📄 Reports (Coming Soon)</h2>
-        </div>
-      </section>
+  </div>
+
+  <!-- Section 1: Presence Summary -->
+<div id="employeeDirectory" class="employee-subsection" style="display: none;">
+  <div class="section-header">
+    <h3>Employee Presence Summary</h3>
+    <button class="close-btn" onclick="collapseSection('employeeDirectory')">✖</button>
+  </div>
+
+  <!-- 🔍 Filter Bar -->
+  <div class="employee-filter-bar">
+    <input type="text" id="employeeSearchInput" placeholder="🔍 Search by Employee ID..." />
+    <select id="presenceFilter">
+      <option value="">⏱ All Durations</option>
+      <option value="high">Above 8 hrs</option>
+      <option value="medium">6 - 8 hrs</option>
+      <option value="low">Below 6 hrs</option>
+    </select>
+  </div>
+
+  <!-- ✅ Flagged Checkbox (Moved Here) -->
+  <div class="filters-row" style="display: flex; align-items: center; gap: 20px; margin-top: 10px;">
+    <label style="display: flex; align-items: center; gap: 6px;">
+      <input type="checkbox" id="flaggedOnlyCheckbox" />
+      <span>Show Only Flagged</span>
+    </label>
+  </div>
+
+  <!-- 📊 Summary Insight Cards -->
+  <div class="employee-insight-cards">
+    <div class="insight-card">
+      <h4>Avg. Presence (hrs)</h4>
+      <p id="avgPresenceStat">--</p>
+    </div>
+    <div class="insight-card">
+      <h4>Above 8 hrs</h4>
+      <p id="above8Count">--</p>
+    </div>
+    <div class="insight-card">
+      <h4>Below 6 hrs</h4>
+      <p id="below6Count">--</p>
+    </div>
+  </div>
+
+  <!-- 👥 Employee Cards -->
+  <div id="employeeContainer" class="employee-grid"></div>
+
+  <!-- 🚨 Flagged Employees Review Section (New Location) -->
+  <div class="flagged-performers" style="margin-top: 30px; display:none">
+    <h4>Flagged Employees (Avg Hours > 12)</h4>
+    <div id="flaggedEmployeesContainer" class="employee-grid"></div>
+  </div>
+</div>
+
+<!-- Section 2: Leave Requests -->
+<div id="leaveRequests" class="employee-subsection" style="display: none;">
+  <div class="section-header">
+    <h3>Leave Requests</h3>
+    <button class="close-btn" onclick="collapseSection('leaveRequests')">✖</button>
+  </div>
+  <p>Leave requests feature coming soon...</p>
+</div>
+
+<!-- Section 3: Performance -->
+<div id="performanceSection" class="employee-subsection" style="display: none;">
+  <div class="section-header">
+    <h3>Performance Statistics</h3>
+    <button class="close-btn" onclick="collapseSection('performanceSection')">✖</button>
+  </div>
+
+  <!-- 👑 Top Performers Cards -->
+  <div class="top-performers">
+    <h4>Top 5 Employees</h4>
+    <div id="topEmployeesContainer" class="employee-grid"></div>
+  </div>
+
+  <!-- ⚠️ Bottom Performers Cards -->
+  <div class="bottom-performers">
+    <h4>Bottom 5 Employees</h4>
+    <div id="bottomEmployeesContainer" class="employee-grid"></div>
+  </div>
+</div>
+
+<!-- Section 4: Flagged Anomalies -->
+<div id="flaggedSection" class="employee-subsection" style="display: none;">
+  <div class="section-header">
+    <h3>🚨 Flagged Employees (Anomalies)</h3>
+    <button class="close-btn" onclick="collapseSection('flaggedSection')">✖</button>
+  </div>
+
+  <div id="flaggedOnlyContainer" class="employee-grid">
+    <!-- Flagged cards will render here -->
+  </div>
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+      <!-- ✅ FUTURE SECTIONS -->
+      <div id="analyticsSection" style="display: none;">
+        <h2>📈 Analytics (Coming Soon)</h2>
+      </div>
+
+      <div id="reportsSection" style="display: none;">
+        <h2>📄 Reports (Coming Soon)</h2>
+      </div>
+
+     
+
     </main>
 
-    <!-- Logout Button -->
+    <!-- 🔒 Logout -->
     <div class="logout-container">
       <form action="{{ url_for('logout') }}" method="get">
         <a id="logoutBtn" href="/logout">Logout</a>
@@ -214,18 +280,19 @@
     </div>
   </div>
 
-  <!-- JARVIS Icon -->
+  <!-- 🎙️ JARVIS Icon -->
   <img src="{{ url_for('static', filename='Pictures/Arc_reactor.png') }}" id="jarvisBtn" title="Activate J.A.R.V.I.S." />
 
-  <!-- Audio -->
+  <!-- 🔊 Audio -->
   <audio id="jarvisWorking" src="/static/jarvis_working.mp3"></audio>
   <audio id="jarvisError" src="/static/jarvis_error.mp3"></audio>
 
-  <!-- Scripts -->
+  <!-- 📜 Scripts -->
   <script src="{{ url_for('static', filename='js/kpi.js') }}"></script>
   <script src="{{ url_for('static', filename='js/dashboard_admin.js') }}"></script>
   <script src="{{ url_for('static', filename='js/pie.js') }}"></script>
   <script src="{{ url_for('static', filename='js/employees.js') }}"></script>
   <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
 </body>
 </html>

@@ -639,5 +639,53 @@ function renderAnomalyTrendChart(data) {
   });
 }  
 
+const sidebarItems = document.querySelectorAll('.sidebar-item');
+
+sidebarItems.forEach(item => {
+  item.addEventListener('click', () => {
+    sidebarItems.forEach(i => i.classList.remove('active')); // Remove from all
+    item.classList.add('active'); // Add to clicked
+  });
+});
+
+document.getElementById('dashboardBtn').addEventListener('click', () => {
+  showSection('dashboardSection');
+});
+
+document.getElementById('employeesBtn').addEventListener('click', () => {
+  showSection('employeeSection');
+});
+
+document.getElementById('reportsBtn').addEventListener('click', () => {
+  showSection('reportsSection');
+});
+
+document.getElementById('analyticsBtn').addEventListener('click', () => {
+  showSection('analyticsSection');
+});
+
+function showSection(sectionIdToShow) {
+  const allSections = [
+    'dashboardSection',
+    'employeeSection',
+    'reportsSection',
+    'analyticsSection'
+  ];
+
+  allSections.forEach(sectionId => {
+    const el = document.getElementById(sectionId);
+    if (el) el.style.display = sectionId === sectionIdToShow ? 'block' : 'none';
+  });
+
+  // Highlight active sidebar item
+  document.querySelectorAll('.sidebar-item').forEach(item => {
+    item.classList.remove('active');
+  });
+  const btnId = sectionIdToShow.replace('Section', 'Btn');
+  const activeBtn = document.getElementById(btnId)?.closest('.sidebar-item');
+  if (activeBtn) activeBtn.classList.add('active');
+}
+
+
   
   });
