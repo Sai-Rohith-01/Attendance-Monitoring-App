@@ -1,0 +1,300 @@
+/* ========== Base Reset & Typography ========== */
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background-color: #f6f8fa;
+  color: #212529;
+  line-height: 1.6;
+}
+
+/* ========== Layout Sections ========== */
+.report-section {
+  margin-bottom: 48px;
+  padding: 16px 16px 24px;
+  border-bottom: 1px dashed #c4cdd5;
+  background: linear-gradient(to bottom, #ffffff, #f8fafc);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.section-title {
+  display: inline-block;
+  font-size: 1.3rem;
+  font-weight: 600;
+  padding: 6px 16px;
+  background-color: #eff3f8;
+  color: #0c1e35;
+  border-radius: 999px;
+  border-left: 6px solid #4e73df;
+  margin-bottom: 0;
+}
+
+/* ========== Chart Styles ========== */
+canvas {
+  max-width: 100%;
+  margin-bottom: 24px;
+  border-radius: 12px;
+  background: linear-gradient(to top, #ffffff, #f5f9fc);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.06);
+  transition: transform 0.3s ease;
+}
+
+canvas:hover {
+  transform: scale(1.01);
+}
+
+#performanceChart,
+#attendanceChart,
+#deviationChart,
+#punchInChart {
+  max-height: 320px;
+}
+
+/* ========== Table Styling ========== */
+.table-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.table {
+  width: auto;
+  max-width: 95%;
+  margin: 0 auto;
+  text-align: center;
+  font-size: 0.95rem;
+  background-color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table thead {
+  background: #e9eff5;
+}
+
+.table th,
+.table td {
+  padding: 12px 16px;
+  border: 1px solid #dee2e6;
+  font-size: 0.94rem;
+  vertical-align: middle;
+}
+
+.table tr:nth-child(even) {
+  background-color: #f9fbfc;
+}
+
+/* ========== Narrative Section ========== */
+#narrativeSummary {
+  background: rgba(255, 255, 255, 0.7);
+  padding: 24px;
+  border-left: 4px solid #4e73df;
+  margin-bottom: 35px;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  color: #333;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(6px);
+}
+
+/* ========== Rating ========== */
+#starRating {
+  font-size: 1.4rem;
+  color: gold;
+}
+
+#ratingBadge {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-left: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.rating-excellent {
+  background-color: #28a745;
+  color: #fff;
+}
+
+.rating-good {
+  background-color: #17a2b8;
+  color: #fff;
+}
+
+.rating-average {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.rating-poor {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+/* ========== Rating Progress ========== */
+.rating-progress {
+  width: 100%;
+  max-width: 300px;
+  height: 10px;
+  border-radius: 20px;
+  background-color: #e9ecef;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.rating-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4e73df, #1cc88a);
+  width: 0%;
+  animation: fillProgress 1.4s ease-out forwards;
+  border-radius: 20px;
+}
+
+@keyframes fillProgress {
+  to {
+    width: var(--progress, 50%);
+  }
+}
+
+/* ========== Profile Image ========== */
+.employee-photo {
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.08);
+  border: 3px solid #dee2e6;
+  border-radius: 50%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.employee-photo:hover {
+  transform: scale(1.05);
+}
+
+/* ========== Pill Container ========== */
+.pill-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.pill {
+  padding: 6px 16px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.6);
+  color: #333;
+  font-weight: 500;
+  font-size: 0.9rem;
+  border: 1px solid #ced4da;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(6px);
+}
+
+.pill:hover {
+  background-color: #e2e6ea;
+  border-color: #adb5bd;
+}
+
+.pill.active {
+  background-color: #007bff;
+  color: #fff;
+  border-color: #007bff;
+}
+
+/* Pill Types */
+.pill-positive {
+  background-color: #e7f9f0;
+  color: #1e7e34;
+  border-color: #c3e6cb;
+}
+
+.pill-negative {
+  background-color: #fdecea;
+  color: #c82333;
+  border-color: #f5c6cb;
+}
+
+.pill-neutral {
+  background-color: #f3f4f6;
+  color: #333;
+  border-color: #d1d5da;
+}
+
+/* ========== Pill Info Box ========== */
+.pill-info-box {
+  margin-top: 15px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 16px;
+  border-left: 4px solid #007bff;
+  border-radius: 8px;
+  position: relative;
+  max-width: 600px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(6px);
+}
+
+.pill-info-box p {
+  margin-bottom: 0;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+#closePillInfo {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color:red;
+  cursor: pointer;
+}
+
+#closePillInfo:hover {
+  color: red;
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 768px) {
+  .table {
+    max-width: 100%;
+  }
+
+  #narrativeSummary {
+    font-size: 0.95rem;
+  }
+
+  .section-title {
+    font-size: 1.2rem;
+  }
+
+  .table th,
+  .table td {
+    font-size: 0.88rem;
+    padding: 10px 12px;
+  }
+}
+
+/* ========== Section Collapse Buttons ========== */
+button[data-bs-toggle="collapse"] {
+  margin-left: auto;
+  padding: 4px 10px;
+  font-size: 0.85rem;
+  border-radius: 20px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+button[data-bs-toggle="collapse"]:hover {
+  background-color: #007bff;
+  color: #fff;
+}
+
+/* Hide Tables Button */
+#toggleTablesBtn {
+  margin-right: 0.5rem;
+  z-index: 1;
+}
