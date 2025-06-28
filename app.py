@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from sklearn.preprocessing import MinMaxScaler
 from pandas.api.types import CategoricalDtype
 import time
+import calendar
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
@@ -23,18 +24,18 @@ CACHE_FILE = "preprocessed_data.pkl"
 
 # ========== GLOBAL DATAFRAMES ==========
 df = paired_df = clean_paired_df = None
-daily_summary =daily_attendance_summary= weekday_trends = final_scores = top_fair_users = None
+daily_summary =daily_attendance_summary= weekday_trends = user_stats = final_scores = top_fair_users = None
 
 
 # ========== DATA PREPROCESSING ==========
 def preprocess_data():
-    global df, paired_df, clean_paired_df, daily_summary,daily_attendance_summary, weekday_trends, final_scores, top_fair_users
+    global df, paired_df, clean_paired_df, daily_summary,daily_attendance_summary, weekday_trends,user_stats, final_scores, top_fair_users
 
     start_time = time.time()
 
     if os.path.exists(CACHE_FILE):
         with open(CACHE_FILE, 'rb') as f:
-            (df, paired_df, clean_paired_df, daily_summary, weekday_trends, final_scores, top_fair_users,daily_attendance_summary) = pickle.load(f)
+            (df, paired_df, clean_paired_df, daily_summary, weekday_trends,user_stats, final_scores, top_fair_users,daily_attendance_summary) = pickle.load(f)
         print("✅ Loaded data from cache in", round(time.time() - start_time, 2), "seconds.")
         return
 
@@ -118,6 +119,14 @@ def preprocess_data():
     days_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     cat_type = CategoricalDtype(categories=days_order, ordered=True)
     daily_summary['DayOfWeek'] = daily_summary['DayOfWeek'].astype(cat_type)
+
+    # Convert Month from name to number (e.g. 'January' -> 1)
+    month_name_to_num = {month: i for i, month in enumerate(calendar.month_name) if month}
+    daily_summary['Month'] = daily_summary['Month'].map(month_name_to_num)
+
+    print("✅ Month column sample:", daily_summary['Month'].unique()[:5])
+
+
     
 
     daily_attendance_summary = daily_summary.groupby('DATE_NEW')['Userid'].nunique().reset_index()
@@ -151,7 +160,7 @@ def preprocess_data():
     top_fair_users = user_stats.sort_values('Final_Score', ascending=False).head(10).round(2)
 
     with open(CACHE_FILE, 'wb') as f:
-        pickle.dump((df, paired_df, clean_paired_df, daily_summary, weekday_trends, final_scores, top_fair_users,daily_attendance_summary), f)
+        pickle.dump((df, paired_df, clean_paired_df, daily_summary, weekday_trends,user_stats, final_scores, top_fair_users,daily_attendance_summary), f)
 
     print("✅ Preprocessing done in", round(time.time() - start_time, 2), "seconds.")
 
@@ -873,6 +882,50 @@ def get_performance_scores():
 
 
 
+@app.route('/get_employee_data')
+def get_employee_data():
+    user_id = request.args.get('user_id', type=int)
+    view = request.args.get('view')
+    month = request.args.get('month', type=int)
+
+    print("Incoming user_id:", user_id)
+    print("View requested:", view)
+    print("Month filter:", month)
+
+    if user_id is None or not view:
+        return jsonify({'error': 'Missing required parameters'}), 400
+
+    try:
+        if view == 'attendance':
+            df = daily_summary[daily_summary['Userid'] == user_id]
+            df_user = daily_summary[daily_summary['Userid'] == user_id]
+            print("Available months for user:", df_user['Month'].unique())
+
+            print("Filtered attendance rows:", len(df))
+            if month:
+                df = df[df['Month'] == month]
+                print("After month filter:", len(df))
+            result = df.to_dict(orient='records')
+
+        elif view == 'punchlog':
+            df = clean_paired_df[clean_paired_df['Userid'] == user_id]
+            if month:
+                df['Month'] = pd.to_datetime(df['DATE_NEW']).dt.month
+                df = df[df['Month'] == month]
+            result = df.drop(columns='Month', errors='ignore').to_dict(orient='records')
+
+        elif view == 'performance':
+            df = user_stats[user_stats['Userid'] == user_id]
+            print("Filtered performance rows:", len(df))
+            result = df.to_dict(orient='records')
+
+        else:
+            return jsonify({'error': 'Invalid view type'}), 400
+
+        return jsonify({'data': result})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 
@@ -880,9 +933,22 @@ def get_performance_scores():
 
 
 
-# print(final_scores.columns.tolist())
-# print(top_fair_users.columns.tolist())
-# print("Unique users in top_fair_users:", top_fair_users['Userid'].nunique())
+
+
+
+
+# print(daily_summary.columns.tolist())
+# print(clean_paired_df.columns.tolist())
+print(user_stats.head())
+
+# print("daily_summary Userid dtype:", daily_summary['Userid'].dtype)
+# print("clean_paired_df Userid dtype:", clean_paired_df['Userid'].dtype)
+# print("top_fair_users Userid dtype:", top_fair_users['Userid'].dtype)
+
+
+
+
+
 
 
 # =============================================== MAIN ==================================

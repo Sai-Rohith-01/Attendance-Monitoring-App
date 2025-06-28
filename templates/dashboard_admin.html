@@ -150,6 +150,7 @@
     <button class="employee-toggle" id="leaveRequestsToggle" data-target="leaveRequests">Leave Requests</button>
     <button class="employee-toggle" id="performanceSectionToggle" data-target="performanceSection">Performance Stats</button>
     <button class="employee-toggle" id="flaggedSectionToggle" data-target="flaggedSection">Flagged</button>
+    <button class="employee-toggle" id="employeeMonitorToggle" data-target="employeeMonitorSection">Individual Monitor</button>
 
   </div>
 
@@ -245,6 +246,67 @@
     <!-- Flagged cards will render here -->
   </div>
 </div>
+
+<!-- Section 6: Individual Employee Monitoring -->
+<div id="employeeMonitorSection" class="employee-subsection" style="display: none;">
+  <div class="section-header">
+    <h3>Individual Employee Monitoring</h3>
+    <button class="close-btn" onclick="collapseSection('employeeMonitorSection')">✖</button>
+  </div>
+
+  <!-- Input Controls -->
+  <div class="input-group">
+    <label for="employeeIdInput">Employee ID:</label>
+    <input type="number" id="employeeIdInput" placeholder="Enter User ID" />
+
+    <label for="employeeView">View:</label>
+    <select id="employeeView">
+      <option value="attendance">Attendance</option>
+      <option value="punchlog">Punch Log</option>
+      <option value="performance">Performance</option>
+    </select>
+
+    <label for="employeeMonth">Month:</label>
+    <select id="employeeMonth">
+      <option value="">All</option>
+      <option value="1">January</option>
+      <option value="2">February</option>
+      <option value="3">March</option>
+      <option value="4">April</option>
+      <option value="5">May</option>
+      <option value="6">June</option>
+      <option value="7">July</option>
+      <option value="8">August</option>
+      <option value="9">September</option>
+      <option value="10">October</option>
+      <option value="11">November</option>
+      <option value="12">December</option>
+    </select>
+
+    <label for="employeeDisplayMode">Display:</label>
+    <select id="employeeDisplayMode">
+      <option value="charts">Charts</option>
+      <option value="table">Table</option>
+    </select>
+
+    <button id="loadEmployeeBtn">Load Data</button>
+  </div>
+
+  <!-- Output Display -->
+  <div id="employeeOutput" class="output-area"></div>
+
+  <!-- Chart Display -->
+  <div id="employeeVisualOutput" class="employee-chart-row visual-area">
+  <canvas id="employeeChart1" class="employee-chart-canvas"></canvas>
+  <canvas id="employeeChart2" class="employee-chart-canvas"></canvas>
+</div>
+
+<div id="radarWrapper">
+    <canvas id="employeeChart3"></canvas>
+  </div>
+
+
+
 
 
 </div>

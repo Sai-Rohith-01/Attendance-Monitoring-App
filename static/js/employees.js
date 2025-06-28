@@ -310,4 +310,509 @@ document.getElementById('flaggedSectionToggle').addEventListener('click', () => 
   renderGlobalFlaggedSection();
 });
 
+
+// ========= Chart Instances (optional for future chart display) =========
+let employeeChart1 = null;
+let employeeChart2 = null;
+let employeeChart3 = null; 
+
+// ========= Known Date Columns =========
+const dateColumns = ['DATE_NEW', 'DATE_SORT', 'IN', 'OUT'];
+
+// ========= Load Employee Data & Render =========
+document.getElementById('loadEmployeeBtn').addEventListener('click', async () => {
+  const userId = document.getElementById('employeeIdInput').value.trim();
+  const view = document.getElementById('employeeView').value;
+  const month = document.getElementById('employeeMonth').value;
+  const displayMode = document.getElementById('employeeDisplayMode').value;
+  const output = document.getElementById('employeeOutput');
+  const chartContainer = document.getElementById('employeeVisualOutput');
+
+  // Clear UI
+  output.innerHTML = '';
+  if (chartContainer) chartContainer.style.display = 'none';
+
+  if (!userId) {
+    output.innerHTML = `<p class="no-data">⚠️ Please enter a valid Employee ID.</p>`;
+    return;
+  }
+
+  const url = new URL('/get_employee_data', window.location.origin);
+  url.searchParams.append('user_id', userId);
+  url.searchParams.append('view', view);
+  if (month) url.searchParams.append('month', month);
+
+  try {
+    const res = await fetch(url);
+    const result = await res.json();
+
+    if (!result.data || result.data.length === 0) {
+      output.innerHTML = `<p class="no-data">❗ No records found for the selected employee and month.</p>`;
+      return;
+    }
+
+    if (displayMode === 'charts') {
+      output.innerHTML = '';
+      if (chartContainer) {
+        chartContainer.style.display = 'block';
+        renderEmployeeCharts(result.data, view);
+      }
+    } else {
+      if (chartContainer) chartContainer.style.display = 'none';
+      output.appendChild(renderEmployeeTable(result.data, view));
+    }
+
+  } catch (err) {
+    console.error(err);
+    output.innerHTML = `<p class="no-data">🚫 Failed to load employee data. Please try again later.</p>`;
+  }
+});
+
+// ========= Render Table View =========
+function renderEmployeeTable(data, view) {
+  const table = document.createElement('table');
+  const thead = document.createElement('thead');
+  const tbody = document.createElement('tbody');
+
+  // Define column name replacements here
+  const columnLabels = {
+    'DATE_NEW': 'Date',
+    'IN': 'Punch-In',
+    'OUT': 'Punch-Out',
+    'Presence_Hours': 'Total Hours',
+    'Punch_Count': 'Punches',
+    'Week': 'Week',
+    'Month': 'Month',
+    'Flag_Excessive_Hours': 'Flagged'
+    // Add more if needed
+  };
+
+  // Columns to ignore
+  const ignoredColumns = ['DATE_SORT', 'Presence_Hours_Capped'];
+
+  // Final columns after filtering
+  const columns = Object.keys(data[0]).filter(col => !ignoredColumns.includes(col));
+
+  // Header
+  const headerRow = document.createElement('tr');
+  columns.forEach(col => {
+    const th = document.createElement('th');
+    th.textContent = columnLabels[col] || col;
+    headerRow.appendChild(th);
+  });
+  thead.appendChild(headerRow);
+
+  // Rows
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    columns.forEach(col => {
+      const td = document.createElement('td');
+      td.textContent = formatCell(row[col], col);
+      td.textContent = formatPunchLogCell(row[col], col);
+
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(thead);
+  table.appendChild(tbody);
+  return table;
+}
+
+// ========= Format Cell Values =========
+function formatCell(value, column) {
+  if (value === null || value === undefined) return '-';
+
+  // Format known date fields
+  if (dateColumns.includes(column) && !isNaN(Date.parse(value))) {
+    const date = new Date(value);
+    return `${String(date.getDate()).padStart(2, '0')}/` +
+           `${String(date.getMonth() + 1).padStart(2, '0')}/` +
+           `${date.getFullYear()}`;
+  }
+
+  // Only round Presence_Hours to 2 decimals
+  if (column === 'Presence_Hours' && typeof value === 'number') {
+    return value.toFixed(2);
+  }
+
+  // Format booleans
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+
+  return value;
+}
+
+function formatPunchLogCell(value, column) {
+  if (value === null || value === undefined) return '-';
+
+  // Format DATE_NEW as dd/mm/yyyy
+  if (column === 'DATE_NEW' && !isNaN(Date.parse(value))) {
+    const date = new Date(value);
+    return `${String(date.getDate()).padStart(2, '0')}/` +
+           `${String(date.getMonth() + 1).padStart(2, '0')}/` +
+           `${date.getFullYear()}`;
+  }
+
+  // Format IN and OUT times (hh:mm AM/PM)
+  if ((column === 'IN' || column === 'OUT') && !isNaN(Date.parse(value))) {
+    const time = new Date(value);
+    return time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // Round duration values (like Duration_Hours)
+  if ((column === 'Duration' || column === 'Presence_Hours') && typeof value === 'number') {
+    return value.toFixed(2);
+  }
+
+  // Format booleans as Yes/No
+  if (typeof value === 'boolean') {
+    return value ? 'Yes' : 'No';
+  }
+
+  return value;
+}
+
+
+
+
+
+// ========= OPTIONAL: Render Charts (future extension) =========
+function renderEmployeeCharts(data, view) {
+  const ctx1 = document.getElementById('employeeChart1')?.getContext('2d');
+  const ctx2 = document.getElementById('employeeChart2')?.getContext('2d');
+
+  if (employeeChart1) employeeChart1.destroy();
+  if (employeeChart2) employeeChart2.destroy();
+  if (employeeChart3) employeeChart3.destroy();
+
+  if (view === 'attendance') {
+    const labels = data.map(d => formatChartDate(d.DATE_NEW));
+    const hours = data.map(d => d.Presence_Hours);
+    const expectedHours = 8;
+    const deviations = data.map(d => (d.Presence_Hours ?? 0) - expectedHours);
+
+    employeeChart1 = new Chart(ctx1, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Presence Hours',
+          data: hours,
+          borderColor: 'blue',
+          backgroundColor: 'rgba(0, 0, 255, 0.1)',
+          fill: true,
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Daily Presence Hours'
+          },
+          tooltip: {
+            callbacks: {
+              title: function(tooltipItems) {
+                const rawDate = tooltipItems[0].label; // this is "dd/mm/yyyy"
+                const [day, month, year] = rawDate.split('/');
+                const dateObj = new Date(`${year}-${month}-${day}`);
+                const dayName = dateObj.toLocaleDateString(undefined, { weekday: 'long' });
+                return `${dayName}, ${rawDate}`;  // e.g., "Monday, 24/06/2025"
+                }
+                
+              }
+            }
+          }
+        }
+      });
+
+employeeChart2 = new Chart(ctx2, {
+  type: 'bar',
+  data: {
+    labels: labels,
+    datasets: [{
+      label: 'Deviation from Expected Hours (8 hrs)',
+      data: deviations,
+      backgroundColor: deviations.map(val => val >= 0 ? '#27ae60' : '#e74c3c') // green for overwork, red for under
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      title: {
+        display: true,
+        text: 'Daily Deviation from 8-Hour Standard'
+      },
+      tooltip: {
+        callbacks: {
+          title: function(tooltipItems) {
+                const rawDate = tooltipItems[0].label; // this is "dd/mm/yyyy"
+                const [day, month, year] = rawDate.split('/');
+                const dateObj = new Date(`${year}-${month}-${day}`);
+                const dayName = dateObj.toLocaleDateString(undefined, { weekday: 'long' });
+                return `${dayName}, ${rawDate}`;  // e.g., "Monday, 24/06/2025"
+                },
+          label: function(context) {
+            const value = context.raw;
+            return (value >= 0 ? '+' : '') + value.toFixed(2) + ' hrs';
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: false,
+        title: {
+          display: true,
+          text: 'Hours (+/-)'
+        },
+        grid: {
+          color: function(context) {
+            return context.tick.value === 0 ? '#000' : '#ccc';
+          },
+          lineWidth: function(context) {
+            return context.tick.value === 0 ? 2 : 1;
+          }
+        }
+      }
+    }
+  }
+});
+
+  }
+
+  if (view === 'punchlog') {
+  const ctx1 = document.getElementById('employeeChart1').getContext('2d');
+  if (employeeChart1) employeeChart1.destroy();
+  if (employeeChart3) employeeChart3.destroy();
+
+  // Hide second chart for punch log
+  document.getElementById('employeeChart2').style.display = 'none';
+
+  const inData = [];
+  const outData = [];
+
+  data.forEach(entry => {
+    const rawDate = entry.DATE_NEW;
+    const dateObj = new Date(rawDate);  // ISO or parseable date string
+    const label = formatChartDate(rawDate); // formatted for axis
+    const day = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+
+    if (entry.IN) {
+      const inTime = new Date(entry.IN);
+      inData.push({
+        x: label,
+        y: inTime.getHours() + inTime.getMinutes() / 60,
+        fullTime: inTime.toLocaleTimeString(),
+        day
+      });
+    }
+
+    if (entry.OUT) {
+      const outTime = new Date(entry.OUT);
+      outData.push({
+        x: label,
+        y: outTime.getHours() + outTime.getMinutes() / 60,
+        fullTime: outTime.toLocaleTimeString(),
+        day
+      });
+    }
+  });
+
+  employeeChart1 = new Chart(ctx1, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: 'IN',
+          data: inData,
+          backgroundColor: '#3498db',
+          pointStyle: 'circle',
+          pointRadius: 6,
+          hoverRadius: 8
+        },
+        {
+          label: 'OUT',
+          data: outData,
+          backgroundColor: '#e67e22',
+          pointStyle: 'triangle',
+          pointRadius: 6,
+          hoverRadius: 8
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            usePointStyle: true,
+            padding: 20
+          }
+        },
+        title: {
+          display: true,
+          text: 'Employee Punch Log',
+          font: {
+            size: 18
+          }
+        },
+        tooltip: {
+          callbacks: {
+            title: (ctx) => {
+              const { x, day } = ctx[0].raw;
+              return `${x} (${day})`;
+            },
+            label: (ctx) => {
+              return `Time: ${ctx.raw.fullTime}`;
+            }
+          }
+        }
+      },
+      animation: {
+        duration: 800,
+        easing: 'easeOutQuart'
+      },
+      scales: {
+        x: {
+          type: 'category',
+          title: {
+            display: true,
+            text: 'Date'
+          },
+          ticks: {
+            autoSkip: true,
+            maxRotation: 60,
+            minRotation: 45
+          },
+          grid: {
+            color: '#eee'
+          }
+        },
+        y: {
+          min: 0,
+          max: 24,
+          title: {
+            display: true,
+            text: 'Time (HH:mm)'
+          },
+          ticks: {
+            stepSize: 1,
+            callback: val => {
+              const h = Math.floor(val);
+              const m = Math.round((val - h) * 60);
+              return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+            }
+          },
+          grid: {
+            color: '#eee'
+          }
+        }
+      }
+    }
+  });
+}
+
+if (view === 'performance') {
+  const ctx3 = document.getElementById('employeeChart3').getContext('2d');
+
+  if (employeeChart1) employeeChart1.destroy();
+  if (employeeChart2) employeeChart2.destroy();
+  if (employeeChart3) employeeChart3.destroy();
+
+  const radarCanvas = document.getElementById('employeeChart3');
+  radarCanvas.style.display = 'block';
+  radarCanvas.style.width = '500px';
+  radarCanvas.style.height = '500px';
+  radarCanvas.style.margin = '-30px auto 0 auto';
+
+  const avgPresence = data[0].Avg_Hours_Norm ?? 0;
+  const avgPunctuality = data[0].Days_Worked_Norm ?? 0;
+  const avgConsistency = data[0].Consistency_Score ?? 0;
+
+  employeeChart3 = new Chart(ctx3, {
+    type: 'radar',
+    data: {
+      labels: ['Avg Hours', 'Days Worked', 'Consistency'],
+      datasets: [{
+        label: 'Performance Components',
+        data: [avgPresence, avgPunctuality, avgConsistency],
+        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+        borderColor: '#3498db',
+        pointBackgroundColor: '#3498db'
+      }]
+    },
+    options: {
+      responsive: true,
+      layout: {
+        padding: 10
+      },
+      plugins: {
+        title: {
+          display: true,
+          text: 'Normalized Component Scores'
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.label}: ${ctx.raw?.toFixed(2)}`
+          }
+        }
+      },
+      scales: {
+        r: {
+          min: 0,
+          max: 1,
+          ticks: {
+            stepSize: 0.2,
+            backdropColor: 'transparent'
+          },
+          grid: {
+            circular: true,
+            color: '#ccc'
+          },
+          pointLabels: {
+            font: {
+              size: 12
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+
+
+
+
+
+
+
+  
+
+  // You can later add punchlog/performance chart render logic here
+}
+
+function formatChartDate(dateStr) {
+  const date = new Date(dateStr);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+function average(arr) {
+  const filtered = arr.filter(v => typeof v === 'number' && !isNaN(v));
+  if (filtered.length === 0) return 0;
+  const sum = filtered.reduce((a, b) => a + b, 0);
+  return sum / filtered.length;
+}
+
+
+
+
 });

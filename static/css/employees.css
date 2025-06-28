@@ -325,6 +325,124 @@ canvas#bottomEmployeesChart {
   animation: badge-bounce 1.2s infinite;
 }
 
+/* ===== Employee Monitoring Section ===== */
+#employeeMonitorSection {
+  margin-top: 40px;
+  padding: 20px;
+  background-color: var(--card-bg, #fff);
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+#employeeMonitorSection h2 {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  color: var(--text-primary, #333);
+}
+
+.input-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  font-weight: 500;
+  margin-right: 5px;
+}
+
+.input-group input,
+.input-group select {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  min-width: 120px;
+}
+
+.input-group button {
+  padding: 8px 16px;
+  background-color: var(--primary-color, #4CAF50);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.input-group button:hover {
+  background-color: var(--primary-dark, #388E3C);
+}
+
+.output-area {
+  margin-top: 20px;
+  overflow-x: auto;
+}
+
+/* Table styling */
+.output-area table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.output-area th,
+.output-area td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+.output-area th {
+  background-color: #f5f5f5;
+  font-weight: 600;
+}
+
+.output-area .no-data {
+  text-align: center;
+  color: #999;
+  font-style: italic;
+}
+
+.input-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  margin-right: 5px;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  #employeeVisualOutput {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+/* Radar chart container styling */
+#employeeChart3 {
+  display: block;
+  margin: -50px auto 0 auto;  /* Move a bit up and center */
+  width: 500px;
+  height: 500px;
+  max-width: 90vw;
+  max-height: 90vw;
+  background-color: transparent; /* Optional: if you want it transparent */
+}
+
+/* Optional: Give some spacing around if needed */
+#employeeChart3Wrapper {
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
 
 
