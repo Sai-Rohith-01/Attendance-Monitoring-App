@@ -931,15 +931,112 @@ def get_employee_data():
 
 
 
+@app.route('/view_employee_report')
+def view_employee_report():
+    empid = request.args.get('empid')
+    month = request.args.get('month')  # Expected format: YYYY-MM
 
+    if not empid:
+        return "Employee ID is required", 400
 
+    try:
+        empid = int(empid)
+    except ValueError:
+        return "Employee ID must be an integer", 400
+
+    selected_month = None
+    if month:
+        try:
+            dt = pd.to_datetime(month)
+            selected_month = dt.strftime("%B %Y")  # For display only
+        except:
+            return "Invalid month format. Use YYYY-MM", 400
+
+    return render_template(
+        "employee_report_view.html",
+        empid=empid,
+        selected_month=selected_month
+    )
+
+@app.route('/get_employee_report_data')
+def get_employee_report_data():
+    empid = request.args.get('empid')
+    month = request.args.get('month')  # Expected format: YYYY-MM
+
+    if not empid:
+        return jsonify({"error": "empid is required"}), 400
+
+    try:
+        empid = int(empid)
+    except ValueError:
+        return jsonify({"error": "empid must be an integer"}), 400
+
+    att_df = daily_summary[daily_summary['Userid'] == empid].copy()
+    punch_df = clean_paired_df[clean_paired_df['Userid'] == empid].copy()
+    perf_df = user_stats[user_stats['Userid'] == empid].copy()
+
+    # Convert 'DATE_NEW' to datetime if not already
+    if not pd.api.types.is_datetime64_any_dtype(punch_df['DATE_NEW']):
+        punch_df['DATE_NEW'] = pd.to_datetime(punch_df['DATE_NEW'])
+
+    if month:
+        try:
+            dt = pd.to_datetime(month + "-01")  # Force proper date parsing
+            month_num = dt.month
+            year = dt.year
+
+            att_df = att_df[(att_df['Month'] == month_num) & (pd.to_datetime(att_df['DATE_NEW']).dt.year == year)]
+            punch_df = punch_df[(punch_df['DATE_NEW'].dt.month == month_num) & (punch_df['DATE_NEW'].dt.year == year)]
+            perf_df = perf_df[(perf_df['Month'] == month_num) & (perf_df['Year'] == year)]
+        except Exception as e:
+            return jsonify({"error": "Invalid month format. Use YYYY-MM"}), 400
+
+    # If performance is missing, compute it from attendance
+    if perf_df.empty:
+        if not att_df.empty:
+            avg_hours = att_df['Presence_Hours'].mean()
+            total_hours = att_df['Presence_Hours'].sum()
+            days_worked = att_df['Presence_Hours'].count()
+            # Scoring formula can be customized
+            final_score = round((avg_hours / 8) * 0.4 + (days_worked / 30) * 0.3 + (total_hours / (8*30)) * 0.3, 2)
+
+            perf_df = pd.DataFrame([{
+                "Userid": empid,
+                "Avg_Hours": round(avg_hours, 1),
+                "Total_Hours": round(total_hours, 1),
+                "Days_Worked": days_worked,
+                "Final_Score": final_score,
+                "Month": month_num if month else None,
+                "Year": year if month else None
+            }])
+        else:
+            perf_df = pd.DataFrame([{
+                "Userid": empid,
+                "Avg_Hours": 0,
+                "Total_Hours": 0,
+                "Days_Worked": 0,
+                "Final_Score": 0,
+                "Month": month_num if month else None,
+                "Year": year if month else None
+            }])
+
+    # Convert to JSON
+    att_json = att_df.to_dict(orient='records')
+    punch_json = punch_df.to_dict(orient='records')
+    perf_json = perf_df.to_dict(orient='records')
+
+    return jsonify({
+        "attendance": att_json,
+        "punchlog": punch_json,
+        "performance": perf_json
+    })
 
 
 
 
 # print(daily_summary.columns.tolist())
 # print(clean_paired_df.columns.tolist())
-print(user_stats.head())
+# print(user_stats.head())
 
 # print("daily_summary Userid dtype:", daily_summary['Userid'].dtype)
 # print("clean_paired_df Userid dtype:", clean_paired_df['Userid'].dtype)

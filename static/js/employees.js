@@ -368,6 +368,37 @@ document.getElementById('loadEmployeeBtn').addEventListener('click', async () =>
   }
 });
 
+// ========= Generate Report (OPEN IN NEW TAB) =========
+document.getElementById('generateReportBtn').addEventListener('click', () => {
+  const empId = document.getElementById('employeeIdInput').value.trim();
+  const monthInput = document.getElementById('employeeMonth').value;
+
+  let month = '';
+if (monthInput) {
+  const num = parseInt(monthInput);
+  if (!isNaN(num) && num >= 1 && num <= 12) {
+    const currentYear = new Date().getFullYear();
+    month = `${currentYear}-${String(num).padStart(2, '0')}`;
+  } else {
+    alert('Invalid month selected.');
+    return;
+  }
+}
+
+
+  if (!empId) {
+    alert('Please enter a valid employee ID');
+    return;
+  }
+
+  const url = `/view_employee_report?empid=${encodeURIComponent(empId)}${month ? `&month=${month}` : ''}`;
+  const win = window.open(url, '_blank');
+  if (!win) {
+    alert('Popup blocked! Please allow popups for this site.');
+  }
+});
+
+
 // ========= Render Table View =========
 function renderEmployeeTable(data, view) {
   const table = document.createElement('table');
@@ -586,10 +617,10 @@ employeeChart2 = new Chart(ctx2, {
   if (view === 'punchlog') {
   const ctx1 = document.getElementById('employeeChart1').getContext('2d');
   if (employeeChart1) employeeChart1.destroy();
+  if (employeeChart2) employeeChart2.destroy();
   if (employeeChart3) employeeChart3.destroy();
 
-  // Hide second chart for punch log
-  document.getElementById('employeeChart2').style.display = 'none';
+ 
 
   const inData = [];
   const outData = [];
