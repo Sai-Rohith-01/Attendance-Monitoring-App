@@ -273,7 +273,7 @@ function renderPerformanceChart(data) {
   new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: ['Avg Hours', 'Days Worked', 'Total Hours', 'Final Score'],
+      labels: ['Avg Hours', 'Days Worked', 'Total Hours'],
       datasets: [{
         label: 'Performance Metrics',
         data: [p.Avg_Hours, p.Days_Worked, p.Total_Hours, p.Final_Score],

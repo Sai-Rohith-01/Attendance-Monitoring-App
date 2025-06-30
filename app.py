@@ -126,6 +126,9 @@ def preprocess_data():
 
     print("✅ Month column sample:", daily_summary['Month'].unique()[:5])
 
+    # One-time setup after loading daily_summary
+    daily_summary["Month"] = pd.to_datetime(daily_summary["DATE_NEW"]).dt.to_period("M").astype(str)
+
 
     
 
@@ -886,7 +889,7 @@ def get_performance_scores():
 def get_employee_data():
     user_id = request.args.get('user_id', type=int)
     view = request.args.get('view')
-    month = request.args.get('month', type=int)
+    month = request.args.get('month')  # Keep as string (will convert to formatted str below)
 
     print("Incoming user_id:", user_id)
     print("View requested:", view)
@@ -898,25 +901,24 @@ def get_employee_data():
     try:
         if view == 'attendance':
             df = daily_summary[daily_summary['Userid'] == user_id]
-            df_user = daily_summary[daily_summary['Userid'] == user_id]
-            print("Available months for user:", df_user['Month'].unique())
+            print("Available months for user:", df['Month'].unique())
 
-            print("Filtered attendance rows:", len(df))
-            if month:
+            if month and month != 'all':
+                month = f"2025-{int(month):02d}"
                 df = df[df['Month'] == month]
                 print("After month filter:", len(df))
             result = df.to_dict(orient='records')
 
         elif view == 'punchlog':
             df = clean_paired_df[clean_paired_df['Userid'] == user_id]
-            if month:
-                df['Month'] = pd.to_datetime(df['DATE_NEW']).dt.month
+            if month and month != 'all':
+                df['Month'] = pd.to_datetime(df['DATE_NEW']).dt.strftime('%Y-%m')
+                month = f"2025-{int(month):02d}"
                 df = df[df['Month'] == month]
             result = df.drop(columns='Month', errors='ignore').to_dict(orient='records')
 
         elif view == 'performance':
             df = user_stats[user_stats['Userid'] == user_id]
-            print("Filtered performance rows:", len(df))
             result = df.to_dict(orient='records')
 
         else:
@@ -926,8 +928,6 @@ def get_employee_data():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
 
 
 
@@ -1032,13 +1032,215 @@ def get_employee_report_data():
     })
 
 
+@app.route("/get_attendance_trends")
+def get_attendance_trends():
+    try:
+        from datetime import datetime
+
+        month = request.args.get("month")
+        print(f"[DEBUG] Fetching attendance trends for month: {month}")
+
+        # Copy base DataFrames
+        df = daily_summary.copy()
+        punch_df = paired_df.copy()
+
+        # Optional month filter
+        if month and month != "all":
+            df = df[df["Month"] == month]
+            punch_df = punch_df[punch_df["Month"] == month]
+
+        # If no data, return defaults
+        if df.empty or punch_df.empty:
+            return jsonify({
+                "avg_presence_hours": 0,
+                "late_ins": 0,
+                "early_outs": 0
+            })
+
+        # Convert IN/OUT to datetime
+        punch_df["IN"] = pd.to_datetime(punch_df["IN"], errors="coerce")
+        punch_df["OUT"] = pd.to_datetime(punch_df["OUT"], errors="coerce")
+        punch_df = punch_df.dropna(subset=["IN", "OUT"])
+
+        # Late INs and Early OUTs
+        late_threshold = datetime.strptime("09:00", "%H:%M").time()
+        early_threshold = datetime.strptime("17:00", "%H:%M").time()
+
+        late_ins = punch_df[punch_df["IN"].dt.time > late_threshold].shape[0]
+        early_outs = punch_df[
+            (punch_df["OUT"].dt.time < early_threshold) &
+            (punch_df["Duration"] < 6)
+        ].shape[0]
+
+        # Filter only present days
+        present_df = df[df["Presence_Hours"] > 0]
+
+        # Aggregate total hours and total days per employee
+        user_summary = present_df.groupby("Userid").agg(
+            total_hours=("Presence_Hours", "sum"),
+            total_days=("Presence_Hours", "count")
+        ).reset_index()
+
+        # Compute overall average hours
+        total_hours_all = user_summary["total_hours"].sum()
+        total_days_all = user_summary["total_days"].sum()
+        avg_presence = round(total_hours_all / total_days_all, 2) if total_days_all else 0
+
+        print(f"[DEBUG] Total Hours: {total_hours_all}, Total Days: {total_days_all}, Avg: {avg_presence}")
+
+        return jsonify({
+            "avg_presence_hours": avg_presence,
+            "late_ins": late_ins,
+            "early_outs": early_outs
+        })
+
+    except Exception as e:
+        print(f"[ERROR] /get_attendance_trends: {str(e)}")
+        return jsonify({"error": "Internal Server Error"}), 500
 
 
-# print(daily_summary.columns.tolist())
-# print(clean_paired_df.columns.tolist())
-# print(user_stats.head())
 
-# print("daily_summary Userid dtype:", daily_summary['Userid'].dtype)
+
+@app.route("/get_behavior_patterns")
+def get_behavior_patterns():
+    try:
+        month = request.args.get("month")
+        print(f"[DEBUG] Fetching behavior patterns for month: {month}")
+
+        df = paired_df.copy()
+        if month and month != "all":
+            if df["DATE_NEW"].dtype == "datetime64[ns]":
+                df = df[df["DATE_NEW"].dt.strftime("%Y-%m") == month]
+            else:
+                df = df[df["Month"] == month]  # fallback if 'Month' exists
+
+        if df.empty:
+            return jsonify({
+                "irregularities": {
+                    "mismatches": 0,
+                    "short_days": 0,
+                    "long_days": 0
+                },
+                "heatmap_data": []
+            })
+
+        # ✅ Add missing DayOfWeek and Hour columns based on IN time
+        df = df.copy()
+        df["DayOfWeek"] = df["IN"].dt.day_name()
+        df["Hour"] = df["IN"].dt.hour
+
+        # ✅ Heatmap data (only for rows with valid IN times)
+        heatmap_data = (
+            df.dropna(subset=["IN"])
+              .groupby(["DayOfWeek", "Hour"])
+              .size()
+              .reset_index(name="count")
+              .to_dict(orient="records")
+        )
+
+        # ✅ Irregularity flags
+        mismatches = df[df["Mismatch_Flag"] != "OK"].shape[0]
+        short_days = df[df["Duration"] < 4].shape[0]
+        long_days = df[df["Duration"] > 12].shape[0]
+
+        return jsonify({
+            "heatmap_data": heatmap_data,
+            "irregularities": {
+                "mismatches": mismatches,
+                "short_days": short_days,
+                "long_days": long_days
+            }
+        })
+
+    except Exception as e:
+        print(f"[ERROR] /get_behavior_patterns: {str(e)}")
+        return jsonify({"error": "Internal Server Error"}), 500
+
+
+
+@app.route("/get_performance_correlation")
+def get_performance_correlation():
+    try:
+        month = request.args.get("month")
+        print(f"[DEBUG] Fetching performance correlation for month: {month}")
+
+        df = user_stats.copy()
+        if month and month != "all":
+            if df["Month"].dtype != object:
+                month = month.replace("-", "")
+            df = df[df["Month"] == month]
+
+        if df.empty:
+            return jsonify([])
+
+        return jsonify(df[["Userid", "Avg_Hours", "Final_Score"]].to_dict(orient="records"))
+
+    except Exception as e:
+        print(f"[ERROR] /get_performance_correlation: {str(e)}")
+        return jsonify({"error": "Internal Server Error"}), 500
+
+
+@app.route("/get_flagged_users")
+def get_flagged_users():
+    try:
+        month = request.args.get("month")
+        print(f"[DEBUG] Fetching flagged users for month: {month}")
+
+        df = daily_summary.copy()
+        if month and month != "all":
+            if df["Month"].dtype != object:
+                month = month.replace("-", "")
+            df = df[df["Month"] == month]
+
+        if df.empty:
+            return jsonify([])
+
+        grouped = df.groupby("Userid").agg({
+            "Presence_Hours": "mean",
+            "Punch_Count": "mean",
+            "Flag_Excessive_Hours": "sum"
+        }).reset_index()
+
+        flagged = grouped[grouped["Flag_Excessive_Hours"] > 0]
+
+        result = []
+        for _, row in flagged.iterrows():
+            flags = []
+            if row["Presence_Hours"] > 12:
+                flags.append("Excessive Hours")
+            if row["Punch_Count"] > 8:
+                flags.append("Too Many Punches")
+
+            result.append({
+                "empid": row["Userid"],
+                "avg_hours": round(row["Presence_Hours"], 1),
+                "punch_count": int(row["Punch_Count"]),
+                "flag_count": len(flags),  # ✅ Needed for bubble size
+                "flags": flags
+            })
+            
+
+        return jsonify(result)
+
+    except Exception as e:
+        print(f"[ERROR] /get_flagged_users: {str(e)}")
+        return jsonify({"error": "Internal Server Error"}), 500
+
+
+
+
+
+#============================================ TESTING =======================================
+# print(daily_attendance_summary.columns.tolist())
+# print(daily_summary.head())
+# print(user_stats.columns.tolist())
+# print(daily_summary["Month"].unique())
+# print(daily_summary[daily_summary["Presence_Hours"] == 0])
+# print(daily_summary['Month'].unique())
+# print(daily_summary['Month'].dtype)
+
+
+# print("daily_summary Userid dtype:", paired_df['OUT'].dtype)
 # print("clean_paired_df Userid dtype:", clean_paired_df['Userid'].dtype)
 # print("top_fair_users Userid dtype:", top_fair_users['Userid'].dtype)
 

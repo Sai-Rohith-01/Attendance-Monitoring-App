@@ -17,6 +17,7 @@
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@1.2.0/dist/chartjs-chart-matrix.min.js"></script>
 </head>
 
 <body>
@@ -31,7 +32,7 @@
         <ul class="sidebar-menu">
           <li class="sidebar-item active" id="dashboardBtn">📊 Dashboard</li>
           <li class="sidebar-item" id="employeesBtn">👥 Employees</li>
-          <li class="sidebar-item" id="analyticsBtn">📈 Analytics</li>
+          <li class="sidebar-item" id="analyticsBtn">📈 Trends</li>
           <li class="sidebar-item" id="reportsBtn">📄 Reports</li>
         </ul>
       </nav>
@@ -306,10 +307,7 @@
 <div id="radarWrapper">
     <canvas id="employeeChart3"></canvas>
   </div>
-
-
-
-
+</div>
 
 </div>
 
@@ -321,17 +319,83 @@
 
 
 
+     <!-- ✅ Analytics Section -->
+<section id="analyticsSection" style="display: none;">
+  <h2 class="section-title">📈 Trends Dashboard</h2>
 
+  <!-- ========== Filter Controls ========== -->
+  <div class="filter-bar">
+    <!-- Removed month selection -->
+    <button id="viewAllAnalyticsBtn">Load Analytics</button>
+    <button id="toggleAnalyticsViewBtn">Switch to Graph View</button>
+  </div>
 
-      <!-- ✅ FUTURE SECTIONS -->
-      <div id="analyticsSection" style="display: none;">
-        <h2>📈 Analytics (Coming Soon)</h2>
+  <!-- 🔁 Container for Card View -->
+  <div id="analyticsCardView">
+    <div class="analytics-card-row">
+      <div class="info-card" id="cardPresenceHours">
+        <h4>Average Presence Hours</h4>
+        <p class="value">--</p>
       </div>
+      <div class="info-card" id="cardLateIns">
+        <h4>Late-INs</h4>
+        <p class="value">--</p>
+      </div>
+      <div class="info-card" id="cardEarlyOuts">
+        <h4>Early-OUTs</h4>
+        <p class="value">--</p>
+      </div>
+      <div class="info-card" id="cardMismatches">
+        <h4>Punch Mismatches</h4>
+        <p class="value">--</p>
+      </div>
+      <div class="info-card" id="cardFlagged">
+        <h4>Flagged Employees</h4>
+        <p class="value">--</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="analyticsChartView" style="display: none;">
+
+  <!-- Row 1 -->
+<div class="analytics-row">
+  <div class="chart-card">
+    <h3 class="chart-title">Performance vs Presence</h3>
+    <canvas id="correlationChart"></canvas>
+  </div>
+</div>
+
+<!-- Row 2 -->
+<div class="analytics-row">
+  <div class="chart-card">
+    <h3 class="chart-title">Late-INs and Early-OUTs</h3>
+    <canvas id="trendChartLateEarly"></canvas>
+  </div>
+</div>
+
+<!-- Row 3 -->
+<div class="analytics-row" style="display: none;">
+  <div class="chart-card">
+    <h3 class="chart-title">Average Presence Hours</h3>
+    <canvas id="trendChartPresence"></canvas>
+  </div>
+</div>
+
+
+</div>
+
+
+
+</section>
+
+
+
 
       <div id="reportsSection" style="display: none;">
         <h2>📄 Reports (Coming Soon)</h2>
       </div>
-</div>
+
      
 
     </main>
@@ -356,6 +420,7 @@
   <script src="{{ url_for('static', filename='js/dashboard_admin.js') }}"></script>
   <script src="{{ url_for('static', filename='js/pie.js') }}"></script>
   <script src="{{ url_for('static', filename='js/employees.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
   <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
 </body>
