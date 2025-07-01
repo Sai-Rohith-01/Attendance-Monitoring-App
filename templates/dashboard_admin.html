@@ -12,6 +12,7 @@
   <!-- Styles -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_admin.css') }}"/>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/employees.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/report.css') }}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 
@@ -381,21 +382,82 @@
     <canvas id="trendChartPresence"></canvas>
   </div>
 </div>
+</div>
+</section>
+
+<!--Report Section-->
+<div id="reportsSection" style="display: none;" class="report-dashboard">
+  
+
+  <!-- ====== Header & Controls ====== -->
+  <div class="report-header">
+    <h2>📄 Team Reports</h2>
+    <div class="report-controls">
+      <button id="loadReportBtn">🔄 Generate</button>
+    </div>
+  </div>
+
+  <!-- ====== Metric Cards ====== -->
+  <div id="reportMetricsRow" class="report-cards-row">
+    <!-- Cards will be injected by JS -->
+  </div>
+
+  <!-- ====== Charts Row ====== -->
+  <div class="report-charts-row">
+    <!-- Bar Chart -->
+    <div class="report-chart-card">
+      <h3>Top Deviations from Expected Hours</h3>
+      <canvas id="reportBarChart" height="200"></canvas>
+    </div>
+
+    <!-- Pie Chart -->
+    <div class="report-chart-card">
+      <h3>Mismatch & Anomaly Breakdown</h3>
+      <canvas id="reportPieChart" height="200"></canvas>
+    </div>
+
+    <!-- Line Chart -->
+    <div class="report-chart-card">
+      <h3>Final Score Trend</h3>
+      <canvas id="reportLineChart" height="200"></canvas>
+    </div>
+
+    <!-- Anomaly Line Chart -->
+    <div class="report-chart-card">
+      <h3>Monthly Anomaly Trend</h3>
+      <canvas id="anomalyLineChart" height="180"></canvas>
+    </div>
+  </div>
+
+  <!-- ====== Flagged Summary Ring ====== -->
+<div id="flaggedUserCards" class="report-cards-row">
+  <div class="report-card neon-hover">
+    <div class="circular-progress-wrapper">
+      <div class="circular-progress" data-percent="72" data-color="#f39c12">
+        <svg viewBox="0 0 120 120">
+          <defs>
+            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#f39c12"/>
+              <stop offset="100%" stop-color="#ff6f61"/>
+            </linearGradient>
+          </defs>
+          <circle class="background" cx="60" cy="60" r="50"></circle>
+          <circle class="progress" cx="60" cy="60" r="50" stroke="url(#grad)"></circle>
+        </svg>
+        <div class="progress-text">72%</div>
+      </div>
+      <p style="text-align:center; margin-top:6px; font-size: 13px;">37 users</p>
+    </div>
+    <p style="text-align:center; font-size:12px;">Moderately overworked with low scores.</p>
+  </div>
+</div>
 
 
 </div>
 
 
 
-</section>
-
-
-
-
-      <div id="reportsSection" style="display: none;">
-        <h2>📄 Reports (Coming Soon)</h2>
-      </div>
-
+</div>
      
 
     </main>
@@ -421,6 +483,7 @@
   <script src="{{ url_for('static', filename='js/pie.js') }}"></script>
   <script src="{{ url_for('static', filename='js/employees.js') }}"></script>
   <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/report.js') }}"></script>
   <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
 </body>

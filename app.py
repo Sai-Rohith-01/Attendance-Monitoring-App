@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Blueprint, Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from collections import defaultdict
 import numpy as np
 import pandas as pd
@@ -23,19 +23,19 @@ users = {
 CACHE_FILE = "preprocessed_data.pkl"
 
 # ========== GLOBAL DATAFRAMES ==========
-df = paired_df = clean_paired_df = None
+df = paired_df = clean_paired_df = user_date_grid = None
 daily_summary =daily_attendance_summary= weekday_trends = user_stats = final_scores = top_fair_users = None
 
 
 # ========== DATA PREPROCESSING ==========
 def preprocess_data():
-    global df, paired_df, clean_paired_df, daily_summary,daily_attendance_summary, weekday_trends,user_stats, final_scores, top_fair_users
+    global df, paired_df, clean_paired_df, user_date_grid, daily_summary,daily_attendance_summary, weekday_trends,user_stats, final_scores, top_fair_users
 
     start_time = time.time()
 
     if os.path.exists(CACHE_FILE):
         with open(CACHE_FILE, 'rb') as f:
-            (df, paired_df, clean_paired_df, daily_summary, weekday_trends,user_stats, final_scores, top_fair_users,daily_attendance_summary) = pickle.load(f)
+            (df, paired_df, clean_paired_df, user_date_grid, daily_summary, weekday_trends,user_stats, final_scores, top_fair_users,daily_attendance_summary) = pickle.load(f)
         print("✅ Loaded data from cache in", round(time.time() - start_time, 2), "seconds.")
         return
 
@@ -96,7 +96,6 @@ def preprocess_data():
     clean_paired_df = paired_df[paired_df['Mismatch_Flag'] == 'OK'].copy()
     clean_paired_df.dropna(subset=['IN', 'OUT'], inplace=True)
     clean_paired_df = clean_paired_df[clean_paired_df['OUT'] >= clean_paired_df['IN']]
-
     daily_summary = clean_paired_df.groupby(['Userid', 'DATE_NEW']).agg(
         Presence_Hours=('Duration', 'sum'),
         Punch_Count=('Duration', 'count')
@@ -128,6 +127,32 @@ def preprocess_data():
 
     # One-time setup after loading daily_summary
     daily_summary["Month"] = pd.to_datetime(daily_summary["DATE_NEW"]).dt.to_period("M").astype(str)
+    
+    
+    # ----- Step 1: Generate all valid working dates -----
+    # Modify to skip weekends if needed (optional)
+    full_working_dates = pd.date_range(start='2025-01-01', end='2025-05-27', freq='B')
+    working_dates_df = pd.DataFrame({'DATE_NEW': full_working_dates})
+    
+    # ----- Step 2: Get unique UserIDs from clean_paired_df -----
+    unique_users_df = clean_paired_df[['Userid']].drop_duplicates()
+    unique_users_df['key'] = 1
+    working_dates_df['key'] = 1
+    
+    # ----- Step 3: Create full User-Date grid -----
+    user_date_grid = pd.merge(unique_users_df, working_dates_df, on='key').drop(columns='key')
+    
+    # ----- Step 4: Tag 'P' for present, 'A' for absent -----
+    present_df = clean_paired_df[['Userid', 'DATE_NEW']].drop_duplicates()
+    present_df['Status'] = 'P'
+    
+    # Left join to mark status
+    user_date_grid = pd.merge(user_date_grid, present_df, on=['Userid', 'DATE_NEW'], how='left')
+    user_date_grid['Status'] = user_date_grid['Status'].fillna('A')
+    
+    # ----- Step 5 (optional): Get absence count per user -----
+    user_absence_counts = user_date_grid[user_date_grid['Status'] == 'A'].groupby('Userid').size()
+
 
 
     
@@ -163,9 +188,10 @@ def preprocess_data():
     top_fair_users = user_stats.sort_values('Final_Score', ascending=False).head(10).round(2)
 
     with open(CACHE_FILE, 'wb') as f:
-        pickle.dump((df, paired_df, clean_paired_df, daily_summary, weekday_trends,user_stats, final_scores, top_fair_users,daily_attendance_summary), f)
+        pickle.dump((df, paired_df, clean_paired_df, user_date_grid, daily_summary, weekday_trends,user_stats, final_scores, top_fair_users,daily_attendance_summary), f)
 
     print("✅ Preprocessing done in", round(time.time() - start_time, 2), "seconds.")
+
 
 preprocess_data()
 
@@ -1225,34 +1251,178 @@ def get_flagged_users():
     except Exception as e:
         print(f"[ERROR] /get_flagged_users: {str(e)}")
         return jsonify({"error": "Internal Server Error"}), 500
+    
+
+
+
+# ==== Flask setup ====
+reports_bp = Blueprint('reports', __name__)
+
+@reports_bp.route("/get_reports_data", methods=["GET"])
+def get_reports_data():
+    try:
+        global daily_summary, paired_df, final_scores, user_stats
+
+        # --- Accurate Absence Count Using paired_df (Weekdays Only) ---
+        paired_df["DATE"] = pd.to_datetime(paired_df["DATE_NEW"])
+        paired_df["Weekday"] = paired_df["DATE"].dt.weekday  # 0 = Monday
+
+        # Ensure proper datetime
+        paired_df["DATE"] = pd.to_datetime(paired_df["DATE_NEW"])
+        
+        # Get each user's active date range
+        user_active_dates = paired_df.groupby("Userid")["DATE"].agg(["min", "max"]).reset_index()
+        
+        # Generate full expected presence records
+        records = []
+        for _, row in user_active_dates.iterrows():
+            user_id = row["Userid"]
+            start = row["min"]
+            end = row["max"]
+            user_days = pd.date_range(start=start, end=end, freq="B")  # Only business days
+            for day in user_days:
+                records.append((user_id, day))
+
+        full_index = pd.MultiIndex.from_tuples(records, names=["Userid", "DATE"])
+        present_index = paired_df.set_index(["Userid", "DATE"]).index
+        missing_index = full_index.difference(present_index)
+
+        absence_df = pd.DataFrame(missing_index.tolist(), columns=["Userid", "DATE"])
+        absence_counts = absence_df.groupby("Userid").size().reset_index(name="Absences")
+
+        present_index = paired_df.set_index(["Userid", "DATE"]).index
+        missing_index = full_index.difference(present_index)
+
+        absence_df = pd.DataFrame(missing_index.tolist(), columns=["Userid", "DATE"])
+        absence_counts = absence_df.groupby("Userid").size().reset_index(name="Absences")
+
+        # --- Attendance Summary ---
+        attendance_summary = (
+            daily_summary.groupby("Userid")
+            .agg(
+                Avg_Hours=("Presence_Hours", "mean"),
+                Total_Days=("Presence_Hours", "count"),
+                Excessive_Hour_Days=("Flag_Excessive_Hours", "sum"),
+                Punch_Issues=("Punch_Count", lambda x: (x < 2).sum())
+            )
+            .reset_index()
+        )
+
+        # Merge absence counts into attendance
+        attendance_summary = pd.merge(attendance_summary, absence_counts, on="Userid", how="left")
+        attendance_summary["Absences"] = attendance_summary["Absences"].fillna(0).astype(int)
+
+        # --- Mismatch Summary ---
+        mismatch_summary = (
+            paired_df.groupby("Userid")
+            .agg(
+                Unmatched_INs=("Mismatch_Flag", lambda x: (x == "Unmatched_IN").sum()),
+                Unmatched_OUTs=("Mismatch_Flag", lambda x: (x == "Unmatched_OUT").sum()),
+                Mismatch_Count=("Mismatch_Flag", lambda x: (x != "OK").sum()),
+                Late_INs=("IN", lambda x: (x.dt.hour > 9).sum()),
+                Early_OUTs=("OUT", lambda x: (x.dt.hour < 17).sum())
+            )
+            .reset_index()
+        )
+
+        # --- Merge All Sources ---
+        merged = pd.merge(attendance_summary, mismatch_summary, on="Userid", how="outer")
+        merged = pd.merge(merged, final_scores, on="Userid", how="left")
+        merged = pd.merge(merged, user_stats, on="Userid", how="left")
+
+        # Ensure expected columns are always present
+        required_cols = [
+            "Avg_Hours", "Absences", "Total_Days", "Excessive_Hour_Days", "Punch_Issues",
+            "Unmatched_INs", "Unmatched_OUTs", "Mismatch_Count", "Late_INs", "Early_OUTs", "Final_Score"
+        ]
+        for col in required_cols:
+            if col not in merged.columns:
+                merged[col] = 0
+
+        merged.fillna(0, inplace=True)
+
+        # --- Normalize Final Score ---
+        merged["Final_Score"] = (merged["Final_Score"] * 100).clip(0, 100)
+
+        # --- Flagged Logic ---
+        # Only flag if:
+        # - Avg_Hours > 12 (excessive)
+        # - OR Final_Score < 50 (underperformer)
+        merged["Flagged"] = (
+            (merged["Avg_Hours"] > 12) |
+            (merged["Final_Score"] < 30)
+        ).astype(int)
+
+        # Final formatting
+        merged = merged.round(2)
+        merged.sort_values("Final_Score", ascending=False, inplace=True)
+
+        return jsonify({"status": "success", "data": merged.to_dict(orient="records")})
+
+    except Exception as e:
+        print("[REPORT ERROR]", str(e))
+        return jsonify({"status": "error", "message": str(e)})
+    
+
+
+@reports_bp.route("/get_anomaly_trend", methods=["GET"])
+@reports_bp.route("/get_anomaly_trend", methods=["GET"])
+def get_anomaly_trend():
+    try:
+        global paired_df
+
+        df = paired_df.copy()
+        df["DATE_NEW"] = pd.to_datetime(df["DATE_NEW"])
+        df["IN"] = pd.to_datetime(df["IN"], errors="coerce")
+        df["OUT"] = pd.to_datetime(df["OUT"], errors="coerce")
+
+        # Cutoffs
+        early_cutoff = datetime.strptime("06:00", "%H:%M").time()
+        late_cutoff = datetime.strptime("22:00", "%H:%M").time()
+
+        # Group by date
+        anomaly_trend = []
+        grouped = df.groupby(df["DATE_NEW"].dt.date)
+
+        for date_val, group in grouped:
+            early_anomalies = group[group["IN"].dt.time < early_cutoff]
+            late_anomalies = group[group["OUT"].dt.time > late_cutoff]
+            total_anomalies = len(early_anomalies) + len(late_anomalies)
+
+            anomaly_trend.append({
+                "Date": date_val.strftime("%d-%m"),
+                "Count": total_anomalies
+            })
+
+        anomaly_trend = sorted(anomaly_trend, key=lambda x: datetime.strptime(x["Date"], "%d-%m"))
+
+        return jsonify({ "status": "success", "trend": anomaly_trend })
+
+    except Exception as e:
+        print("[ANOMALY TREND ERROR]", str(e))
+        return jsonify({ "status": "error", "message": str(e) })
 
 
 
 
 
-#============================================ TESTING =======================================
-# print(daily_attendance_summary.columns.tolist())
-# print(daily_summary.head())
-# print(user_stats.columns.tolist())
-# print(daily_summary["Month"].unique())
-# print(daily_summary[daily_summary["Presence_Hours"] == 0])
-# print(daily_summary['Month'].unique())
-# print(daily_summary['Month'].dtype)
 
 
-# print("daily_summary Userid dtype:", paired_df['OUT'].dtype)
-# print("clean_paired_df Userid dtype:", clean_paired_df['Userid'].dtype)
-# print("top_fair_users Userid dtype:", top_fair_users['Userid'].dtype)
+        
+# ==========================================TESTING====================================
+# print(clean_paired_df.head())
+# print("[DEBUG] daily_summary columns:", daily_summary.columns.tolist())
 
+# ==================================== Register blueprint=============================
+app.register_blueprint(reports_bp)
+# print("[ROUTES]", app.url_map)
 
-
-
-
-
-
-# =============================================== MAIN ==================================
+ 
+ 
+ #========================================== Main ====================================
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
