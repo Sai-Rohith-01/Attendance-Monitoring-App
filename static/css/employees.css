@@ -443,6 +443,17 @@ canvas#bottomEmployeesChart {
   justify-content: center;
   align-items: center;
 }
+td {
+  transition: color 0.3s ease;
+}
+
+td[style*="color: green"] {
+  background-color: #e7fbe7;
+}
+
+td[style*="color: red"] {
+  background-color: #ffe8e8;
+}
 
 
 

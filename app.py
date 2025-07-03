@@ -569,6 +569,7 @@ def get_monthly_avg_attendance():
         selected_month = pd.to_datetime(month_str + '-01')
         print(f"[DEBUG] Selected Month: {selected_month.strftime('%Y-%m')}")
 
+        # Filter by selected month
         monthly_data = daily_summary[
             (daily_summary['DATE_NEW'].dt.month == selected_month.month) &
             (daily_summary['DATE_NEW'].dt.year == selected_month.year)
@@ -578,15 +579,22 @@ def get_monthly_avg_attendance():
             print("[DEBUG] No records found for the selected month")
             return jsonify({})
 
-        total_days = monthly_data['DATE_NEW'].nunique()
+        # Remove weekends
+        monthly_data = monthly_data[monthly_data['DATE_NEW'].dt.weekday < 5]
+
+        # Get total users
         total_users = df['Userid'].nunique()
-        print(f"[DEBUG] Total Days in Month: {total_days}, Total Users: {total_users}")
 
-        # Calculate daily attendance %
-        monthly_data['daily_percent'] = (monthly_data['Userid'] / total_users) * 100
-        avg_attendance_percent = monthly_data['daily_percent'].mean()
+        # Group by date and count unique users present
+        daily_counts = monthly_data.groupby('DATE_NEW')['Userid'].nunique().reset_index(name='present_users')
 
-        print(f"[DEBUG] Monthly Average Attendance: {avg_attendance_percent:.2f}%")
+        # Calculate daily attendance percentage
+        daily_counts['daily_percent'] = (daily_counts['present_users'] / total_users) * 100
+
+        # Average over all weekdays
+        avg_attendance_percent = daily_counts['daily_percent'].mean()
+
+        print(f"[DEBUG] Avg Attendance % (Weekdays Only): {avg_attendance_percent:.2f}%")
 
         return jsonify({
             'avg_attendance_percent': round(avg_attendance_percent, 2)
@@ -595,6 +603,7 @@ def get_monthly_avg_attendance():
     except Exception as e:
         print(f"[ERROR] Exception in /get_monthly_avg_attendance: {str(e)}")
         return jsonify({})
+
 
 
 
@@ -910,12 +919,15 @@ def get_performance_scores():
         return jsonify({'error': 'Internal server error'}), 500
 
 
+from flask import jsonify, request
+import pandas as pd
+import json
 
 @app.route('/get_employee_data')
 def get_employee_data():
     user_id = request.args.get('user_id', type=int)
     view = request.args.get('view')
-    month = request.args.get('month')  # Keep as string (will convert to formatted str below)
+    month = request.args.get('month')
 
     print("Incoming user_id:", user_id)
     print("View requested:", view)
@@ -927,21 +939,32 @@ def get_employee_data():
     try:
         if view == 'attendance':
             df = daily_summary[daily_summary['Userid'] == user_id]
-            print("Available months for user:", df['Month'].unique())
-
             if month and month != 'all':
                 month = f"2025-{int(month):02d}"
                 df = df[df['Month'] == month]
-                print("After month filter:", len(df))
             result = df.to_dict(orient='records')
 
         elif view == 'punchlog':
-            df = clean_paired_df[clean_paired_df['Userid'] == user_id]
+            df = paired_df[paired_df['Userid'] == user_id].copy()
+            df['ParsedDate'] = pd.to_datetime(df['DATE_NEW'], errors='coerce')
+            df['Month'] = df['ParsedDate'].dt.strftime('%Y-%m')
+
             if month and month != 'all':
-                df['Month'] = pd.to_datetime(df['DATE_NEW']).dt.strftime('%Y-%m')
                 month = f"2025-{int(month):02d}"
                 df = df[df['Month'] == month]
-            result = df.drop(columns='Month', errors='ignore').to_dict(orient='records')
+
+            # Safely format datetime columns to string
+            for col in ['IN', 'OUT']:
+                if col in df.columns:
+                    def safe_format(x):
+                        try:
+                            return pd.to_datetime(x).strftime('%Y-%m-%d %H:%M:%S') if pd.notnull(x) else ''
+                        except Exception:
+                            return ''
+                    df[col] = df[col].apply(safe_format)
+
+            result_df = df.drop(columns=['Month', 'ParsedDate'], errors='ignore')
+            result = json.loads(result_df.astype(str).to_json(orient='records'))
 
         elif view == 'performance':
             df = user_stats[user_stats['Userid'] == user_id]
@@ -954,6 +977,8 @@ def get_employee_data():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
 
 
 
@@ -1410,8 +1435,9 @@ def get_anomaly_trend():
 
         
 # ==========================================TESTING====================================
-# print(clean_paired_df.head())
+# print(paired_df.columns.tolist())
 # print("[DEBUG] daily_summary columns:", daily_summary.columns.tolist())
+# print(paired_df.head())
 
 # ==================================== Register blueprint=============================
 app.register_blueprint(reports_bp)

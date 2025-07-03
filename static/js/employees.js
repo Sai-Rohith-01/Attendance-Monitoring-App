@@ -345,22 +345,37 @@ document.getElementById('loadEmployeeBtn').addEventListener('click', async () =>
   try {
     const res = await fetch(url);
     const result = await res.json();
+console.log('[DEBUG] Employee data response:', result);
 
-    if (!result.data || result.data.length === 0) {
-      output.innerHTML = `<p class="no-data">❗ No records found for the selected employee and month.</p>`;
-      return;
-    }
+let records = [];
+
+if (Array.isArray(result)) {
+  records = result;
+} else if (Array.isArray(result.data)) {
+  records = result.data;
+} else {
+  output.innerHTML = `<p class="no-data">❗ Invalid response format.</p>`;
+  return;
+}
+
+if (records.length === 0) {
+  output.innerHTML = `<p class="no-data">❗ No records found for the selected employee and month.</p>`;
+  return;
+}
+
+
 
     if (displayMode === 'charts') {
-      output.innerHTML = '';
-      if (chartContainer) {
-        chartContainer.style.display = 'block';
-        renderEmployeeCharts(result.data, view);
-      }
-    } else {
-      if (chartContainer) chartContainer.style.display = 'none';
-      output.appendChild(renderEmployeeTable(result.data, view));
-    }
+  output.innerHTML = '';
+  if (chartContainer) {
+    chartContainer.style.display = 'block';
+    renderEmployeeCharts(records, view);
+  }
+} else {
+  if (chartContainer) chartContainer.style.display = 'none';
+  output.appendChild(renderEmployeeTable(records, view));
+}
+
 
   } catch (err) {
     console.error(err);
@@ -405,24 +420,22 @@ function renderEmployeeTable(data, view) {
   const thead = document.createElement('thead');
   const tbody = document.createElement('tbody');
 
-  // Define column name replacements here
   const columnLabels = {
+    'Userid': 'User ID',
     'DATE_NEW': 'Date',
     'IN': 'Punch-In',
     'OUT': 'Punch-Out',
-    'Presence_Hours': 'Total Hours',
-    'Punch_Count': 'Punches',
-    'Week': 'Week',
-    'Month': 'Month',
-    'Flag_Excessive_Hours': 'Flagged'
-    // Add more if needed
+    'Duration': 'Total Hours',
+    'Mismatch_Flag': 'Status'
   };
 
-  // Columns to ignore
   const ignoredColumns = ['DATE_SORT', 'Presence_Hours_Capped'];
+  let columns = Object.keys(data[0]).filter(col => !ignoredColumns.includes(col));
 
-  // Final columns after filtering
-  const columns = Object.keys(data[0]).filter(col => !ignoredColumns.includes(col));
+  // Move 'Userid' to the front if it exists
+  if (columns.includes('Userid')) {
+    columns = ['Userid', ...columns.filter(c => c !== 'Userid')];
+  }
 
   // Header
   const headerRow = document.createElement('tr');
@@ -436,13 +449,44 @@ function renderEmployeeTable(data, view) {
   // Rows
   data.forEach(row => {
     const tr = document.createElement('tr');
+
     columns.forEach(col => {
       const td = document.createElement('td');
-      td.textContent = formatCell(row[col], col);
-      td.textContent = formatPunchLogCell(row[col], col);
+
+      if (col === 'Mismatch_Flag') {
+        const status = String(row[col]).trim().toLowerCase();
+        if (status === 'ok') {
+          td.textContent = 'OK';
+          td.style.color = 'green';
+        } else {
+          td.textContent = 'Mismatch';
+          td.style.color = 'red';
+        }
+        td.style.fontWeight = 'bold';
+      }
+
+      else if (col === 'Duration') {
+        const val = parseFloat(row[col]);
+        td.textContent = isNaN(val) ? '—' : val.toFixed(2);
+      }
+
+      else if (col === 'IN' || col === 'OUT') {
+        const val = row[col];
+        const time = new Date(val);
+        if (!isNaN(time.getTime())) {
+          td.textContent = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } else {
+          td.textContent = '—';
+        }
+      }
+
+      else {
+        td.textContent = row[col] !== null && row[col] !== undefined ? String(row[col]) : '—';
+      }
 
       tr.appendChild(td);
     });
+
     tbody.appendChild(tr);
   });
 
@@ -451,33 +495,18 @@ function renderEmployeeTable(data, view) {
   return table;
 }
 
+
 // ========= Format Cell Values =========
 function formatCell(value, column) {
-  if (value === null || value === undefined) return '-';
+  if (value === null || value === undefined || value === 'NaT') return '—';
 
-  // Format known date fields
-  if (dateColumns.includes(column) && !isNaN(Date.parse(value))) {
-    const date = new Date(value);
-    return `${String(date.getDate()).padStart(2, '0')}/` +
-           `${String(date.getMonth() + 1).padStart(2, '0')}/` +
-           `${date.getFullYear()}`;
+  // Format IN/OUT as HH:mm
+  if ((column === 'IN' || column === 'OUT') && !isNaN(Date.parse(value))) {
+    const time = new Date(value);
+    return time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
-  // Only round Presence_Hours to 2 decimals
-  if (column === 'Presence_Hours' && typeof value === 'number') {
-    return value.toFixed(2);
-  }
-
-  // Format booleans
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-
-  return value;
-}
-
-function formatPunchLogCell(value, column) {
-  if (value === null || value === undefined) return '-';
-
-  // Format DATE_NEW as dd/mm/yyyy
+  // Format DATE_NEW
   if (column === 'DATE_NEW' && !isNaN(Date.parse(value))) {
     const date = new Date(value);
     return `${String(date.getDate()).padStart(2, '0')}/` +
@@ -485,24 +514,20 @@ function formatPunchLogCell(value, column) {
            `${date.getFullYear()}`;
   }
 
-  // Format IN and OUT times (hh:mm AM/PM)
-  if ((column === 'IN' || column === 'OUT') && !isNaN(Date.parse(value))) {
-    const time = new Date(value);
-    return time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-
-  // Round duration values (like Duration_Hours)
+  // Format hours
   if ((column === 'Duration' || column === 'Presence_Hours') && typeof value === 'number') {
     return value.toFixed(2);
   }
 
-  // Format booleans as Yes/No
+  // Format boolean
   if (typeof value === 'boolean') {
     return value ? 'Yes' : 'No';
   }
 
   return value;
 }
+
+
 
 
 
