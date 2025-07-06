@@ -26,12 +26,12 @@ function getRatingLabel(score) {
 }
 
 // ========== Toggle Tables ==========
-document.getElementById('toggleTablesBtn').addEventListener('click', function () {
-  const tables = document.querySelectorAll('.table-container');
-  const isVisible = tables[0].style.display !== 'none';
-  tables.forEach(tbl => tbl.style.display = isVisible ? 'none' : 'flex');
-  this.textContent = isVisible ? 'Show Tables' : 'Hide Tables';
-});
+// document.getElementById('toggleTablesBtn').addEventListener('click', function () {
+//   const tables = document.querySelectorAll('.table-container');
+//   const isVisible = tables[0].style.display !== 'none';
+//   tables.forEach(tbl => tbl.style.display = isVisible ? 'none' : 'flex');
+//   this.textContent = isVisible ? 'Show Tables' : 'Hide Tables';
+// });
 
 
 
@@ -213,13 +213,29 @@ function renderPunchInScatterChart(data) {
   data.forEach(row => {
     const label = formatDate(row.DATE_NEW);
     const day = getDayName(row.DATE_NEW);
+
     if (row.IN) {
-      const t = new Date(row.IN);
-      inData.push({ x: label, y: t.getHours() + t.getMinutes() / 60, fullTime: t.toLocaleTimeString(), day });
+      try {
+        const t = new Date(row.IN.replace(' ', 'T'));
+        inData.push({
+          x: label,
+          y: t.getHours() + t.getMinutes() / 60,
+          fullTime: t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          day
+        });
+      } catch (e) {}
     }
+
     if (row.OUT) {
-      const t = new Date(row.OUT);
-      outData.push({ x: label, y: t.getHours() + t.getMinutes() / 60, fullTime: t.toLocaleTimeString(), day });
+      try {
+        const t = new Date(row.OUT.replace(' ', 'T'));
+        outData.push({
+          x: label,
+          y: t.getHours() + t.getMinutes() / 60,
+          fullTime: t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          day
+        });
+      } catch (e) {}
     }
   });
 
@@ -245,7 +261,10 @@ function renderPunchInScatterChart(data) {
     },
     options: {
       plugins: {
-        title: { display: true, text: 'Punch Log Timeline' },
+        title: {
+          display: true,
+          text: 'Punch Log Timeline'
+        },
         tooltip: {
           callbacks: {
             title: ctx => `${ctx[0].raw.x} (${ctx[0].raw.day})`,
@@ -258,14 +277,21 @@ function renderPunchInScatterChart(data) {
           min: 0,
           max: 24,
           ticks: {
-            callback: val => `${String(Math.floor(val)).padStart(2, '0')}:${String(Math.round((val % 1) * 60)).padStart(2, '0')}`
+            callback: val => {
+              const hours = String(Math.floor(val)).padStart(2, '0');
+              const minutes = String(Math.round((val % 1) * 60)).padStart(2, '0');
+              return `${hours}:${minutes}`;
+            }
           }
         },
-        x: { type: 'category' }
+        x: {
+          type: 'category'
+        }
       }
     }
   });
 }
+
 
 function renderPerformanceChart(data) {
   const p = data[0];
@@ -304,16 +330,40 @@ function renderAttendanceTable(data) {
 
 function renderPunchLogTable(data) {
   const tbl = document.getElementById('punchLogTable');
-  const rows = data.map(d => `
-    <tr>
-      <td>${formatDate(d.DATE_NEW)}</td>
-      <td>${getDayName(d.DATE_NEW)}</td>
-      <td>${d.IN ? new Date(d.IN).toLocaleTimeString() : '-'}</td>
-      <td>${d.OUT ? new Date(d.OUT).toLocaleTimeString() : '-'}</td>
-    </tr>
-  `).join('');
-  tbl.innerHTML = `<thead><tr><th>Date</th><th>Day</th><th>IN</th><th>OUT</th></tr></thead><tbody>${rows}</tbody>`;
+
+  const rows = data.map(d => {
+    const inTime = d.IN ? formatTime(d.IN) : '-';
+    const outTime = d.OUT ? formatTime(d.OUT) : '-';
+    const isMismatch = d.Mismatch_Flag && d.Mismatch_Flag !== 'OK';
+
+    return `
+      <tr class="${isMismatch ? 'mismatch-row' : 'ok-row'}">
+        <td>${formatDate(d.DATE_NEW)}</td>
+        <td>${getDayName(d.DATE_NEW)}</td>
+        <td>${inTime}</td>
+        <td>${outTime}</td>
+      </tr>
+    `;
+  }).join('');
+
+  tbl.innerHTML = `
+    <thead>
+      <tr><th>Date</th><th>Day</th><th>IN</th><th>OUT</th></tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  `;
 }
+
+
+function formatTime(datetimeStr) {
+  try {
+    const dateObj = new Date(datetimeStr.replace(' ', 'T'));
+    return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    return '-';
+  }
+}
+
 
 function renderPerformanceTable(data) {
   const p = data[0];
@@ -331,18 +381,25 @@ function renderPerformanceTable(data) {
 document.addEventListener('DOMContentLoaded', async () => {
   const params = new URLSearchParams(window.location.search);
   const empid = params.get('empid');
-  const month = params.get('month') || '';
-  const url = `/get_employee_report_data?empid=${empid}${month ? `&month=${month}` : ''}`;
+  const month = params.get('month');
+  let url = `/get_employee_report_data?empid=${empid}`;
+  if (month && /^\d{4}-\d{2}$/.test(month)) {
+    url += `&month=${month}`;
+  }
 
   try {
     const res = await fetch(url);
     const data = await res.json();
 
     if (data.error) {
+      console.error('[EMPLOYEE REPORT ERROR] Backend error:', data.error);
       document.body.innerHTML = `<p style="color:red">${data.error}</p>`;
       return;
     }
 
+    console.log('[DEBUG] API data:', data);  // <-- See the full object
+
+    // Now try to render
     renderAttendanceLineChart(data.attendance);
     renderDeviationBarChart(data.attendance);
     renderPunchInScatterChart(data.punchlog);
@@ -354,23 +411,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     renderNarrative(data.performance, empid, month);
   } catch (err) {
+    console.error('[EMPLOYEE REPORT ERROR] Exception:', err);
     document.body.innerHTML = '<p style="color:red">Failed to load report data.</p>';
   }
-
-  const toggleBtn = document.getElementById('toggleTablesBtn');
-let tablesVisible = true;
-
-toggleBtn.addEventListener('click', () => {
-  tablesVisible = !tablesVisible;
-
-  document.querySelectorAll('.table-container').forEach(container => {
-    container.style.display = tablesVisible ? 'flex' : 'none';
-  });
-
-  toggleBtn.textContent = tablesVisible ? 'Hide Tables' : 'Show Tables';
 });
 
 
 
 
-});
+
+

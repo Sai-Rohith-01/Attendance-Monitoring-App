@@ -35,6 +35,7 @@
           <li class="sidebar-item" id="employeesBtn">👥 Employees</li>
           <li class="sidebar-item" id="analyticsBtn">📈 Trends</li>
           <li class="sidebar-item" id="reportsBtn">📄 Reports</li>
+          <li class="sidebar-item" id="timingInsightsTab">🕒Timing Insights</li>               
         </ul>
       </nav>
     </aside>
@@ -451,9 +452,24 @@
     <p style="text-align:center; font-size:12px;">Moderately overworked with low scores.</p>
   </div>
 </div>
-
-
 </div>
+
+<!--Timing Section-->
+
+<div id="timingInsightsSection" class="main-section" style="display: none;">
+  <h2 class="section-title">🕒 Timing Insights</h2>
+  
+  <div id="timingCardsRow" class="row mt-4">
+    <!-- Insight metric cards will go here -->
+  </div>
+
+  <div class="mt-5">
+    <canvas id="avgInOutChart" height="100"></canvas>
+  </div>
+
+  <!-- Add more placeholders for interval, punctuality, consistency charts later -->
+</div>
+
 
 
 
@@ -484,6 +500,7 @@
   <script src="{{ url_for('static', filename='js/employees.js') }}"></script>
   <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
   <script src="{{ url_for('static', filename='js/report.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/time.js') }}"></script>
   <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
 </body>

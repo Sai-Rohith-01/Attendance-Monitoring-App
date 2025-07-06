@@ -46,7 +46,7 @@ def preprocess_data():
     df['DATE_NEW'] = pd.to_datetime(df['DATE_NEW'], format='%d-%b-%y', errors='coerce')
     df = df.sort_values(by=['Userid', 'DATETIME']).reset_index(drop=True)
 
-    def deduplicate_punches(group, userid, date, threshold_minutes=5):
+    def deduplicate_punches(group, userid, date, threshold_minutes=2):
         group = group.sort_values(by='DATETIME').reset_index(drop=True)
         deduped = [group.iloc[0]]
         for i in range(1, len(group)):
@@ -998,6 +998,7 @@ def view_employee_report():
     selected_month = None
     if month:
         try:
+            print("[DEBUG] month input:", month)
             dt = pd.to_datetime(month)
             selected_month = dt.strftime("%B %Y")  # For display only
         except:
@@ -1009,10 +1010,16 @@ def view_employee_report():
         selected_month=selected_month
     )
 
+from flask import request, jsonify
+import pandas as pd
+import numpy as np
+
 @app.route('/get_employee_report_data')
 def get_employee_report_data():
     empid = request.args.get('empid')
     month = request.args.get('month')  # Expected format: YYYY-MM
+
+    # print(f"[DEBUG] Incoming request: empid={empid}, month={month}")
 
     if not empid:
         return jsonify({"error": "empid is required"}), 400
@@ -1022,34 +1029,52 @@ def get_employee_report_data():
     except ValueError:
         return jsonify({"error": "empid must be an integer"}), 400
 
+    # Filter data for this user
     att_df = daily_summary[daily_summary['Userid'] == empid].copy()
-    punch_df = clean_paired_df[clean_paired_df['Userid'] == empid].copy()
+    punch_df = paired_df[paired_df['Userid'] == empid].copy()
     perf_df = user_stats[user_stats['Userid'] == empid].copy()
 
-    # Convert 'DATE_NEW' to datetime if not already
-    if not pd.api.types.is_datetime64_any_dtype(punch_df['DATE_NEW']):
-        punch_df['DATE_NEW'] = pd.to_datetime(punch_df['DATE_NEW'])
+    # Initialize month context
+    month_num = None
+    year = None
 
     if month:
         try:
-            dt = pd.to_datetime(month + "-01")  # Force proper date parsing
+            dt = pd.to_datetime(month + "-01")
+            month_str = dt.strftime('%Y-%m')
             month_num = dt.month
             year = dt.year
 
             att_df = att_df[(att_df['Month'] == month_num) & (pd.to_datetime(att_df['DATE_NEW']).dt.year == year)]
-            punch_df = punch_df[(punch_df['DATE_NEW'].dt.month == month_num) & (punch_df['DATE_NEW'].dt.year == year)]
+
+            punch_df['ParsedDate'] = pd.to_datetime(punch_df['DATE_NEW'], errors='coerce')
+            punch_df['Month'] = punch_df['ParsedDate'].dt.strftime('%Y-%m')
+            punch_df = punch_df[punch_df['Month'] == month_str]
+
             perf_df = perf_df[(perf_df['Month'] == month_num) & (perf_df['Year'] == year)]
         except Exception as e:
+            print("[ERROR] Month parsing failed:", e)
             return jsonify({"error": "Invalid month format. Use YYYY-MM"}), 400
 
-    # If performance is missing, compute it from attendance
+    # Safely format datetime columns in punch_df
+    for col in ['IN', 'OUT']:
+        if col in punch_df.columns:
+            def safe_format(x):
+                try:
+                    return pd.to_datetime(x).strftime('%Y-%m-%d %H:%M:%S') if pd.notnull(x) else ''
+                except Exception:
+                    return ''
+            punch_df[col] = punch_df[col].apply(safe_format)
+
+    punch_df.drop(columns=['ParsedDate', 'Month'], inplace=True, errors='ignore')
+
+    # If no performance data, calculate it
     if perf_df.empty:
         if not att_df.empty:
             avg_hours = att_df['Presence_Hours'].mean()
             total_hours = att_df['Presence_Hours'].sum()
             days_worked = att_df['Presence_Hours'].count()
-            # Scoring formula can be customized
-            final_score = round((avg_hours / 8) * 0.4 + (days_worked / 30) * 0.3 + (total_hours / (8*30)) * 0.3, 2)
+            final_score = round((avg_hours / 8) * 0.4 + (days_worked / 30) * 0.3 + (total_hours / (8 * 30)) * 0.3, 2)
 
             perf_df = pd.DataFrame([{
                 "Userid": empid,
@@ -1057,8 +1082,8 @@ def get_employee_report_data():
                 "Total_Hours": round(total_hours, 1),
                 "Days_Worked": days_worked,
                 "Final_Score": final_score,
-                "Month": month_num if month else None,
-                "Year": year if month else None
+                "Month": month_num,
+                "Year": year
             }])
         else:
             perf_df = pd.DataFrame([{
@@ -1067,20 +1092,29 @@ def get_employee_report_data():
                 "Total_Hours": 0,
                 "Days_Worked": 0,
                 "Final_Score": 0,
-                "Month": month_num if month else None,
-                "Year": year if month else None
+                "Month": month_num,
+                "Year": year
             }])
 
-    # Convert to JSON
+    # ✅ Fix: Replace NaN/inf with None BEFORE converting to JSON
+    att_df.replace([np.nan, np.inf, -np.inf], None, inplace=True)
+    punch_df.replace([np.nan, np.inf, -np.inf], None, inplace=True)
+    perf_df.replace([np.nan, np.inf, -np.inf], None, inplace=True)
+
     att_json = att_df.to_dict(orient='records')
     punch_json = punch_df.to_dict(orient='records')
     perf_json = perf_df.to_dict(orient='records')
 
-    return jsonify({
+    response = {
         "attendance": att_json,
         "punchlog": punch_json,
         "performance": perf_json
-    })
+    }
+
+    # print("[DEBUG] Employee data response:", response)
+    return jsonify(response)
+
+
 
 
 @app.route("/get_attendance_trends")
@@ -1437,7 +1471,7 @@ def get_anomaly_trend():
 # ==========================================TESTING====================================
 # print(paired_df.columns.tolist())
 # print("[DEBUG] daily_summary columns:", daily_summary.columns.tolist())
-# print(paired_df.head())
+# print(paired_df[paired_df.Userid==25])
 
 # ==================================== Register blueprint=============================
 app.register_blueprint(reports_bp)
