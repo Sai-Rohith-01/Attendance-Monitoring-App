@@ -124,6 +124,12 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
 }
+.report-chart-card.full-width {
+  flex: 1 1 100%;
+  max-width: 100%;
+}
+
+
 
 .report-chart-card h3 {
   font-size: 18px;

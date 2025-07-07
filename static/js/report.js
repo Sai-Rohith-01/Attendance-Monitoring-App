@@ -533,3 +533,64 @@ renderFlagSummary({
 
 
 });
+
+document.addEventListener('DOMContentLoaded', () => {
+  const ctx = document.getElementById('attendanceLineChart').getContext('2d');
+
+  fetch('/get_attendance_trend')
+    .then(response => response.json())
+    .then(data => {
+      const labels = data.labels || [];
+      const counts = data.counts || [];
+
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels.map(dateStr => {
+            const [year, month, day] = dateStr.split("-");
+            return `${day}-${month}-${year}`;
+          }),
+          datasets: [{
+            label: 'Present',
+            data: counts,
+            borderColor: '#3399ff',
+            backgroundColor: 'rgba(51, 153, 255, 0.1)',
+            pointBackgroundColor: '#3399ff',
+            pointBorderColor: '#fff',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: '#ccc' }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: '#aaa' },
+              grid: { color: 'rgba(255,255,255,0.05)' }
+            },
+            y: {
+              beginAtZero: true,
+              suggestedMax: 600,
+              ticks: { color: '#aaa' },
+              grid: { color: 'rgba(255,255,255,0.05)' }
+            }
+          }
+        }
+      });
+    })
+    .catch(err => {
+      console.error('[ATTENDANCE CHART ERROR]', err);
+      ctx.font = "16px sans-serif";
+      ctx.fillStyle = "#aaa";
+      ctx.fillText("Failed to load attendance data", 10, 50);
+    });
+});
+

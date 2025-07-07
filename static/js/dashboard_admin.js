@@ -664,12 +664,19 @@ document.getElementById('analyticsBtn').addEventListener('click', () => {
   showSection('analyticsSection');
 });
 
+document.getElementById('timingInsightsTab').addEventListener('click', () => {
+  showSection('timingInsightsSection');
+  loadTimingInsights(); // Also load the data when switching
+});
+
+
 function showSection(sectionIdToShow) {
   const allSections = [
     'dashboardSection',
     'employeeSection',
     'reportsSection',
-    'analyticsSection'
+    'analyticsSection',
+    'timingInsightsSection'
   ];
 
   allSections.forEach(sectionId => {
@@ -685,6 +692,7 @@ function showSection(sectionIdToShow) {
   const activeBtn = document.getElementById(btnId)?.closest('.sidebar-item');
   if (activeBtn) activeBtn.classList.add('active');
 }
+
 
 
   

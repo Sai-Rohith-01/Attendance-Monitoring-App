@@ -414,6 +414,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('[EMPLOYEE REPORT ERROR] Exception:', err);
     document.body.innerHTML = '<p style="color:red">Failed to load report data.</p>';
   }
+
+
+  // ========== Toggle Tables ==========
+document.getElementById('toggleTablesBtn').addEventListener('click', function () {
+  const tables = document.querySelectorAll('#attendanceTable, #punchLogTable, #performanceTable');
+  const shouldHide = this.textContent.trim() === 'Hide Tables';
+
+  tables.forEach(tbl => {
+    const parent = tbl.closest('.table-container') || tbl;
+    parent.classList.toggle('d-none', shouldHide);
+  });
+
+  this.textContent = shouldHide ? 'Show Tables' : 'Hide Tables';
+});
+
 });
 
 

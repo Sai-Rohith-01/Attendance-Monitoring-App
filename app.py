@@ -1461,6 +1461,202 @@ def get_anomaly_trend():
         print("[ANOMALY TREND ERROR]", str(e))
         return jsonify({ "status": "error", "message": str(e) })
 
+@app.route('/get_attendance_trend')
+def get_attendance_trend():
+    if 'role' not in session or session['role'] != 'admin':
+        return jsonify({"status": "error", "message": "Unauthorized"}), 403
+
+    try:
+        summary = daily_attendance_summary.copy()
+        if summary.empty:
+            return jsonify({"status": "error", "message": "No data found"})
+
+        summary = summary.sort_values("DATE_NEW")
+        chart_data = {
+            "status": "success",
+            "labels": summary["DATE_NEW"].dt.strftime("%Y-%m-%d").tolist(),
+            "counts": summary["Present"].tolist()
+        }
+        return jsonify(chart_data)
+
+    except Exception as e:
+        print("[ERROR] Attendance trend:", str(e))
+        return jsonify({"status": "error", "message": str(e)})
+        
+
+
+@app.route('/get_timing_insights')
+def get_timing_insights():
+    try:
+        empid = request.args.get('empid', type=int)  # optional
+        month = request.args.get('month')            # optional
+
+        # Filter base data
+        df = paired_df.copy()
+        if empid:
+            df = df[df["Userid"] == empid]
+        if month:
+            df = df[df["DATE_NEW"].dt.strftime("%Y-%m") == month]
+
+        # Ensure first IN per employee per day
+        df = (
+            df.sort_values(["Userid", "DATE_NEW", "IN"])
+              .groupby(["Userid", "DATE_NEW"], as_index=False)
+              .first()
+              .copy()
+        )
+
+        # Time calculations
+        df["IN_HOUR"] = df["IN"].dt.hour + df["IN"].dt.minute / 60
+        df["OUT_HOUR"] = df["OUT"].dt.hour + df["OUT"].dt.minute / 60
+        df["Duration"] = (df["OUT"] - df["IN"]).dt.total_seconds() / 3600
+
+        # Basic metrics
+        avg_in = round(df["IN_HOUR"].median(), 2)
+        avg_out = round(df["OUT_HOUR"].median(), 2)
+        avg_duration = round(df["Duration"].mean(), 1)
+
+        # Consistency (duration-based)
+        med_duration = df["Duration"].median()
+        consistent_count = ((df["Duration"] - med_duration).abs() < 0.5).groupby(df["Userid"]).mean()
+        consistent_workers = consistent_count[consistent_count >= 0.7].count()
+
+        # Punctual count (based on majority of days)
+        punctual_ratio = (df["IN_HOUR"] <= 9).groupby(df["Userid"]).mean()
+        punctual_count = punctual_ratio[punctual_ratio >= 0.7].count()
+
+        # Weekday-wise average IN/OUT
+        daywise = df.copy()
+        daywise["day"] = daywise["DATE_NEW"].dt.day_name()
+        avg_by_day = (
+            daywise.groupby("day")[["IN_HOUR", "OUT_HOUR"]]
+            .mean()
+            .round(2)
+            .reset_index()
+            .rename(columns={"IN_HOUR": "avg_in", "OUT_HOUR": "avg_out"})
+        )
+
+        # Arrival interval consistency
+        bins = [0, 8, 9, 10, 11, 24]
+        labels = ["Before 8", "8–9", "9–10", "10–11", "After 11"]
+        df["interval"] = pd.cut(df["IN_HOUR"], bins=bins, labels=labels, right=False)
+
+        interval_freq = df.groupby(["Userid", "interval"],observed=True).size().reset_index(name="count")
+        total_days = df.groupby("Userid").size().reset_index(name="total_days")
+        merged = pd.merge(interval_freq, total_days, on="Userid")
+        merged["ratio"] = merged["count"] / merged["total_days"]
+
+        consistent_emps = merged[merged["ratio"] >= 0.7]
+        interval_dist = consistent_emps["interval"].value_counts().sort_index().to_dict()
+
+        # Work categories
+        work_cat_bins = [0, 6, 9, 24]
+        work_labels = ["Underworking", "Consistent", "Overworking"]
+        df["work_category"] = pd.cut(df["Duration"], bins=work_cat_bins, labels=work_labels)
+        work_cat_dist = df.groupby("Userid")["work_category"].agg(lambda x: x.value_counts().idxmax())
+        work_cat_final = work_cat_dist.value_counts().sort_index().to_dict()
+
+        return jsonify({
+            "avg_in_time": f"{int(avg_in):02d}:{int((avg_in % 1) * 60):02d}",
+            "avg_out_time": f"{int(avg_out):02d}:{int((avg_out % 1) * 60):02d}",
+            "avg_duration": f"{avg_duration} hrs",
+            "consistent_count": int(consistent_workers),
+            "punctual_count": int(punctual_count),
+            "avg_times_by_day": avg_by_day.to_dict(orient="records"),
+            "interval_distribution": interval_dist,
+            "work_categories": work_cat_final
+        })
+
+    except Exception as e:
+        import traceback
+        print("❌ [SERVER ERROR] get_timing_insights:", e)
+        traceback.print_exc()
+        return jsonify({"error": "Internal server error"}), 500
+    
+
+from flask import request, jsonify
+import numpy as np
+from datetime import datetime
+
+@app.route('/get_top_consistent_employees')
+def get_top_consistent_employees():
+    try:
+        month = request.args.get('month')  # Optional
+        df = paired_df.copy()
+
+        if month:
+            df = df[df['DATE_NEW'].dt.strftime('%Y-%m') == month]
+
+        df = df.dropna(subset=['Userid', 'IN'])
+        df['IN_HOUR'] = df['IN'].dt.hour + df['IN'].dt.minute / 60
+
+        employee_stats = []
+        grouped = df.groupby('Userid')
+
+        for empid, group in grouped:
+            if len(group) < 5:
+                continue
+
+            group = group.sort_values('DATE_NEW', ascending=True)
+            in_times_full = group['IN_HOUR'].tolist()
+            avg_in = round(np.mean(in_times_full), 2)
+            std_dev = round(np.std(in_times_full), 2)
+
+            # Optional strict filter for "consistent" people only
+            if std_dev > 1.0:
+                continue
+
+            # Limit the number of points shown in the chart
+            in_times_for_chart = in_times_full[-100:]  # Last 15 days
+
+            employee_stats.append({
+                "empid": empid,
+                "avg_in": avg_in,
+                "std_dev": std_dev,
+                "in_times": in_times_for_chart
+            })
+
+        # Top 5 sorted by lowest std_dev
+        top_employees = sorted(employee_stats, key=lambda x: x["std_dev"])[:5]
+
+        return jsonify({"top_employees": top_employees})
+
+    except Exception as e:
+        import traceback
+        print("❌ [SERVER ERROR] get_top_consistent_employees:", e)
+        traceback.print_exc()
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route('/get_employee_in_pattern')
+def get_employee_in_pattern():
+    try:
+        empid = request.args.get('empid')
+        if not empid:
+            return jsonify({"error": "Employee ID is required"}), 400
+
+        df = paired_df.copy()
+        df = df[df['Userid'] == int(empid)]
+        df = df.dropna(subset=['IN'])
+
+        if df.empty or len(df) < 3:
+            return jsonify({"error": "Not enough data"}), 404
+
+        df = df.sort_values('DATE_NEW')
+        in_times = df['IN'].dt.hour + df['IN'].dt.minute / 60
+        labels = df['DATE_NEW'].dt.strftime('%b %d').tolist()
+
+        return jsonify({
+            "empid": empid,
+            "in_times": in_times.tolist(),
+            "labels": labels
+        })
+
+    except Exception as e:
+        import traceback
+        print("❌ [SERVER ERROR] get_employee_in_pattern:", e)
+        traceback.print_exc()
+        return jsonify({"error": "Internal server error"}), 500
 
 
 

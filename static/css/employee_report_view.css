@@ -298,3 +298,6 @@ button[data-bs-toggle="collapse"]:hover {
   margin-right: 0.5rem;
   z-index: 1;
 }
+.d-none {
+  display: none !important;
+}

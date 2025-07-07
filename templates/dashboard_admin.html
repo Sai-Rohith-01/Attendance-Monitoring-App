@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_admin.css') }}"/>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/employees.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/report.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/time.css') }}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 
@@ -23,12 +24,13 @@
 
 <body>
   <div class="dashboard-container">
-
+    
     <!-- Sidebar -->
-    <aside class="sidebar">
+     <aside class="sidebar">
       <div class="logo">
         <i class="fa-solid fa-user-tie"></i> <span>Welcome, Admin</span>
       </div>
+      
       <nav>
         <ul class="sidebar-menu">
           <li class="sidebar-item active" id="dashboardBtn">📊 Dashboard</li>
@@ -39,15 +41,15 @@
         </ul>
       </nav>
     </aside>
-
+    
     <!-- 🌙 Global Dark Mode Toggle -->
-       <div id="globalDarkToggle">
-        <button id="darkModeToggle" title="Toggle Dark Mode">🌙</button>
-      </div>
+     <div id="globalDarkToggle">
+      <button id="darkModeToggle" title="Toggle Dark Mode">🌙</button>
+    </div>
 
     <!-- Main content -->
-    <main class="main-content">
-
+    <m class="main-content">
+      
       <!-- ✅ DASHBOARD SECTION -->
       <div id="dashboardSection">
         <div id="dashboardHeader">
@@ -144,355 +146,375 @@
       </div>
 
       <!-- ✅ EMPLOYEE SECTION -->
-<div id="employeeSection" style="display: none;">
-  <h2>👥 Employee Directory</h2>
-
-  <!-- Top Controls -->
-  <div class="employee-controls">
-    <button class="employee-toggle" id="employeeDirectoryToggle" data-target="employeeDirectory">Employee Presence Summary</button>
-    <button class="employee-toggle" id="leaveRequestsToggle" data-target="leaveRequests">Leave Requests</button>
-    <button class="employee-toggle" id="performanceSectionToggle" data-target="performanceSection">Performance Stats</button>
-    <button class="employee-toggle" id="flaggedSectionToggle" data-target="flaggedSection">Flagged</button>
-    <button class="employee-toggle" id="employeeMonitorToggle" data-target="employeeMonitorSection">Individual Monitor</button>
-
-  </div>
-
-  <!-- Section 1: Presence Summary -->
-<div id="employeeDirectory" class="employee-subsection" style="display: none;">
-  <div class="section-header">
-    <h3>Employee Presence Summary</h3>
-    <button class="close-btn" onclick="collapseSection('employeeDirectory')">✖</button>
-  </div>
-
-  <!-- 🔍 Filter Bar -->
-  <div class="employee-filter-bar">
-    <input type="text" id="employeeSearchInput" placeholder="🔍 Search by Employee ID..." />
-    <select id="presenceFilter">
-      <option value="">⏱ All Durations</option>
-      <option value="high">Above 8 hrs</option>
-      <option value="medium">6 - 8 hrs</option>
-      <option value="low">Below 6 hrs</option>
-    </select>
-  </div>
-
-  <!-- ✅ Flagged Checkbox (Moved Here) -->
-  <div class="filters-row" style="display: flex; align-items: center; gap: 20px; margin-top: 10px;">
-    <label style="display: flex; align-items: center; gap: 6px;">
-      <input type="checkbox" id="flaggedOnlyCheckbox" />
-      <span>Show Only Flagged</span>
-    </label>
-  </div>
-
-  <!-- 📊 Summary Insight Cards -->
-  <div class="employee-insight-cards">
-    <div class="insight-card">
-      <h4>Avg. Presence (hrs)</h4>
-      <p id="avgPresenceStat">--</p>
-    </div>
-    <div class="insight-card">
-      <h4>Above 8 hrs</h4>
-      <p id="above8Count">--</p>
-    </div>
-    <div class="insight-card">
-      <h4>Below 6 hrs</h4>
-      <p id="below6Count">--</p>
-    </div>
-  </div>
-
-  <!-- 👥 Employee Cards -->
-  <div id="employeeContainer" class="employee-grid"></div>
-
-  <!-- 🚨 Flagged Employees Review Section (New Location) -->
-  <div class="flagged-performers" style="margin-top: 30px; display:none">
-    <h4>Flagged Employees (Avg Hours > 12)</h4>
-    <div id="flaggedEmployeesContainer" class="employee-grid"></div>
-  </div>
-</div>
-
-<!-- Section 2: Leave Requests -->
-<div id="leaveRequests" class="employee-subsection" style="display: none;">
-  <div class="section-header">
-    <h3>Leave Requests</h3>
-    <button class="close-btn" onclick="collapseSection('leaveRequests')">✖</button>
-  </div>
-  <p>Leave requests feature coming soon...</p>
-</div>
-
-<!-- Section 3: Performance -->
-<div id="performanceSection" class="employee-subsection" style="display: none;">
-  <div class="section-header">
-    <h3>Performance Statistics</h3>
-    <button class="close-btn" onclick="collapseSection('performanceSection')">✖</button>
-  </div>
-
-  <!-- 👑 Top Performers Cards -->
-  <div class="top-performers">
-    <h4>Top 5 Employees</h4>
-    <div id="topEmployeesContainer" class="employee-grid"></div>
-  </div>
-
-  <!-- ⚠️ Bottom Performers Cards -->
-  <div class="bottom-performers">
-    <h4>Bottom 5 Employees</h4>
-    <div id="bottomEmployeesContainer" class="employee-grid"></div>
-  </div>
-</div>
-
-<!-- Section 4: Flagged Anomalies -->
-<div id="flaggedSection" class="employee-subsection" style="display: none;">
-  <div class="section-header">
-    <h3>🚨 Flagged Employees (Anomalies)</h3>
-    <button class="close-btn" onclick="collapseSection('flaggedSection')">✖</button>
-  </div>
-
-  <div id="flaggedOnlyContainer" class="employee-grid">
-    <!-- Flagged cards will render here -->
-  </div>
-</div>
-
-<!-- Section 6: Individual Employee Monitoring -->
-<div id="employeeMonitorSection" class="employee-subsection" style="display: none;">
-  <div class="section-header">
-    <h3>Individual Employee Monitoring</h3>
-    <button class="close-btn" onclick="collapseSection('employeeMonitorSection')">✖</button>
-  </div>
-
-  <!-- Input Controls -->
-  <div class="input-group">
-    <label for="employeeIdInput">Employee ID:</label>
-    <input type="number" id="employeeIdInput" placeholder="Enter User ID" />
-
-    <label for="employeeView">View:</label>
-    <select id="employeeView">
-      <option value="attendance">Attendance</option>
-      <option value="punchlog">Punch Log</option>
-      <option value="performance">Performance</option>
-    </select>
-
-    <label for="employeeMonth">Month:</label>
-    <select id="employeeMonth">
-      <option value="">All</option>
-      <option value="1">January</option>
-      <option value="2">February</option>
-      <option value="3">March</option>
-      <option value="4">April</option>
-      <option value="5">May</option>
-      <option value="6">June</option>
-      <option value="7">July</option>
-      <option value="8">August</option>
-      <option value="9">September</option>
-      <option value="10">October</option>
-      <option value="11">November</option>
-      <option value="12">December</option>
-    </select>
-
-    <label for="employeeDisplayMode">Display:</label>
-    <select id="employeeDisplayMode">
-      <option value="charts">Charts</option>
-      <option value="table">Table</option>
-    </select>
-
-    <button id="loadEmployeeBtn">Load Data</button>
-    <button id="generateReportBtn" class="btn btn-outline-primary mt-3">Generate Report</button>
-
-  </div>
-
-  <!-- Output Display -->
-  <div id="employeeOutput" class="output-area"></div>
-
-  <!-- Chart Display -->
-  <div id="employeeVisualOutput" class="employee-chart-row visual-area">
-  <canvas id="employeeChart1" class="employee-chart-canvas"></canvas>
-  <canvas id="employeeChart2" class="employee-chart-canvas"></canvas>
-</div>
-
-<div id="radarWrapper">
-    <canvas id="employeeChart3"></canvas>
-  </div>
-</div>
-
-</div>
-
-
-
-
-
-
-
-
-
-     <!-- ✅ Analytics Section -->
-<section id="analyticsSection" style="display: none;">
-  <h2 class="section-title">📈 Trends Dashboard</h2>
-
-  <!-- ========== Filter Controls ========== -->
-  <div class="filter-bar">
-    <!-- Removed month selection -->
-    <button id="viewAllAnalyticsBtn">Load Analytics</button>
-    <button id="toggleAnalyticsViewBtn">Switch to Graph View</button>
-  </div>
-
-  <!-- 🔁 Container for Card View -->
-  <div id="analyticsCardView">
-    <div class="analytics-card-row">
-      <div class="info-card" id="cardPresenceHours">
-        <h4>Average Presence Hours</h4>
-        <p class="value">--</p>
-      </div>
-      <div class="info-card" id="cardLateIns">
-        <h4>Late-INs</h4>
-        <p class="value">--</p>
-      </div>
-      <div class="info-card" id="cardEarlyOuts">
-        <h4>Early-OUTs</h4>
-        <p class="value">--</p>
-      </div>
-      <div class="info-card" id="cardMismatches">
-        <h4>Punch Mismatches</h4>
-        <p class="value">--</p>
-      </div>
-      <div class="info-card" id="cardFlagged">
-        <h4>Flagged Employees</h4>
-        <p class="value">--</p>
-      </div>
-    </div>
-  </div>
-
-  <div id="analyticsChartView" style="display: none;">
-
-  <!-- Row 1 -->
-<div class="analytics-row">
-  <div class="chart-card">
-    <h3 class="chart-title">Performance vs Presence</h3>
-    <canvas id="correlationChart"></canvas>
-  </div>
-</div>
-
-<!-- Row 2 -->
-<div class="analytics-row">
-  <div class="chart-card">
-    <h3 class="chart-title">Late-INs and Early-OUTs</h3>
-    <canvas id="trendChartLateEarly"></canvas>
-  </div>
-</div>
-
-<!-- Row 3 -->
-<div class="analytics-row" style="display: none;">
-  <div class="chart-card">
-    <h3 class="chart-title">Average Presence Hours</h3>
-    <canvas id="trendChartPresence"></canvas>
-  </div>
-</div>
-</div>
-</section>
-
-<!--Report Section-->
-<div id="reportsSection" style="display: none;" class="report-dashboard">
-  
-
-  <!-- ====== Header & Controls ====== -->
-  <div class="report-header">
-    <h2>📄 Team Reports</h2>
-    <div class="report-controls">
-      <button id="loadReportBtn">🔄 Generate</button>
-    </div>
-  </div>
-
-  <!-- ====== Metric Cards ====== -->
-  <div id="reportMetricsRow" class="report-cards-row">
-    <!-- Cards will be injected by JS -->
-  </div>
-
-  <!-- ====== Charts Row ====== -->
-  <div class="report-charts-row">
-    <!-- Bar Chart -->
-    <div class="report-chart-card">
-      <h3>Top Deviations from Expected Hours</h3>
-      <canvas id="reportBarChart" height="200"></canvas>
-    </div>
-
-    <!-- Pie Chart -->
-    <div class="report-chart-card">
-      <h3>Mismatch & Anomaly Breakdown</h3>
-      <canvas id="reportPieChart" height="200"></canvas>
-    </div>
-
-    <!-- Line Chart -->
-    <div class="report-chart-card">
-      <h3>Final Score Trend</h3>
-      <canvas id="reportLineChart" height="200"></canvas>
-    </div>
-
-    <!-- Anomaly Line Chart -->
-    <div class="report-chart-card">
-      <h3>Monthly Anomaly Trend</h3>
-      <canvas id="anomalyLineChart" height="180"></canvas>
-    </div>
-  </div>
-
-  <!-- ====== Flagged Summary Ring ====== -->
-<div id="flaggedUserCards" class="report-cards-row">
-  <div class="report-card neon-hover">
-    <div class="circular-progress-wrapper">
-      <div class="circular-progress" data-percent="72" data-color="#f39c12">
-        <svg viewBox="0 0 120 120">
-          <defs>
-            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#f39c12"/>
-              <stop offset="100%" stop-color="#ff6f61"/>
-            </linearGradient>
-          </defs>
-          <circle class="background" cx="60" cy="60" r="50"></circle>
-          <circle class="progress" cx="60" cy="60" r="50" stroke="url(#grad)"></circle>
-        </svg>
-        <div class="progress-text">72%</div>
-      </div>
-      <p style="text-align:center; margin-top:6px; font-size: 13px;">37 users</p>
-    </div>
-    <p style="text-align:center; font-size:12px;">Moderately overworked with low scores.</p>
-  </div>
-</div>
-</div>
-
-<!--Timing Section-->
-
-<div id="timingInsightsSection" class="main-section" style="display: none;">
-  <h2 class="section-title">🕒 Timing Insights</h2>
-  
-  <div id="timingCardsRow" class="row mt-4">
-    <!-- Insight metric cards will go here -->
-  </div>
-
-  <div class="mt-5">
-    <canvas id="avgInOutChart" height="100"></canvas>
-  </div>
-
-  <!-- Add more placeholders for interval, punctuality, consistency charts later -->
-</div>
-
-
-
-
-</div>
+      <div id="employeeSection" style="display: none;">
+       <h2>👥 Employee Directory</h2>
      
+       <!-- Top Controls -->
+       <div class="employee-controls">
+         <button class="employee-toggle" id="employeeDirectoryToggle" data-target="employeeDirectory">Employee Presence Summary</button>
+         <button class="employee-toggle" id="leaveRequestsToggle" data-target="leaveRequests">Leave Requests</button>
+         <button class="employee-toggle" id="performanceSectionToggle" data-target="performanceSection">Performance Stats</button>
+         <button class="employee-toggle" id="flaggedSectionToggle" data-target="flaggedSection">Flagged</button>
+         <button class="employee-toggle" id="employeeMonitorToggle" data-target="employeeMonitorSection">Individual Monitor</button>
+       </div>
+       
+       <!-- Section 1: Presence Summary -->
+        <div id="employeeDirectory" class="employee-subsection" style="display: none;">
+         <div class="section-header">
+           <h3>Employee Presence Summary</h3>
+           <button class="close-btn" onclick="collapseSection('employeeDirectory')">✖</button>
+         </div>
+        
+         <!-- 🔍 Filter Bar -->
+          <div class="employee-filter-bar">
+           <input type="text" id="employeeSearchInput" placeholder="🔍 Search by Employee ID..." />
+           <select id="presenceFilter">
+             <option value="">⏱ All Durations</option>
+             <option value="high">Above 8 hrs</option>
+             <option value="medium">6 - 8 hrs</option>
+             <option value="low">Below 6 hrs</option>
+           </select>
+         </div>
+        
+         <!-- ✅ Flagged Checkbox (Moved Here) -->
+         <div class="filters-row" style="display: flex; align-items: center; gap: 20px; margin-top: 10px;">
+           <label style="display: flex; align-items: center; gap: 6px;">
+             <input type="checkbox" id="flaggedOnlyCheckbox" />
+             <span>Show Only Flagged</span>
+           </label>
+         </div>
+        
+         <!-- 📊 Summary Insight Cards -->
+         <div class="employee-insight-cards">
+           <div class="insight-card">
+             <h4>Avg. Presence (hrs)</h4>
+             <p id="avgPresenceStat">--</p>
+           </div>
+          
+           <div class="insight-card">
+             <h4>Above 8 hrs</h4>
+             <p id="above8Count">--</p>
+           </div>
+          
+           <div class="insight-card">
+             <h4>Below 6 hrs</h4>
+             <p id="below6Count">--</p>
+           </div>
+         </div>
+        
+         <!-- 👥 Employee Cards -->
+         <div id="employeeContainer" class="employee-grid"></div>
+        
+         <!-- 🚨 Flagged Employees Review Section (New Location) -->
+         <div class="flagged-performers" style="margin-top: 30px; display:none">
+           <h4>Flagged Employees (Avg Hours > 12)</h4>
+           <div id="flaggedEmployeesContainer" class="employee-grid"></div>
+         </div>
+       </div>
+      
+       <!-- Section 2: Leave Requests -->
+       <div id="leaveRequests" class="employee-subsection" style="display: none;">
+         <div class="section-header">
+           <h3>Leave Requests</h3>
+           <button class="close-btn" onclick="collapseSection('leaveRequests')">✖</button>
+         </div>
+         <p>Leave requests feature coming soon...</p>
+       </div>
+      
+       <!-- Section 3: Performance -->
+       <div id="performanceSection" class="employee-subsection" style="display: none;">
+         <div class="section-header">
+           <h3>Performance Statistics</h3>
+           <button class="close-btn" onclick="collapseSection('performanceSection')">✖</button>
+         </div>
+        
+         <!-- 👑 Top Performers Cards -->
+         <div class="top-performers">
+           <h4>Top 5 Employees</h4>
+           <div id="topEmployeesContainer" class="employee-grid"></div>
+         </div>
+        
+         <!-- ⚠️ Bottom Performers Cards -->
+         <div class="bottom-performers">
+           <h4>Bottom 5 Employees</h4>
+           <div id="bottomEmployeesContainer" class="employee-grid"></div>
+         </div>
+       </div>
+      
+       <!-- Section 4: Flagged Anomalies -->
+       <div id="flaggedSection" class="employee-subsection" style="display: none;">
+         <div class="section-header">
+           <h3>🚨 Flagged Employees (Anomalies)</h3>
+           <button class="close-btn" onclick="collapseSection('flaggedSection')">✖</button>
+         </div>
+        
+         <div id="flaggedOnlyContainer" class="employee-grid">
+           <!-- Flagged cards will render here -->
+         </div>
+       </div>
+      
+       <!-- Section 6: Individual Employee Monitoring -->
+       <div id="employeeMonitorSection" class="employee-subsection" style="display: none;">
+         <div class="section-header">
+           <h3>Individual Employee Monitoring</h3>
+           <button class="close-btn" onclick="collapseSection('employeeMonitorSection')">✖</button>
+         </div>
+        
+         <!-- Input Controls -->
+          <div class="input-group">
+           <label for="employeeIdInput">Employee ID:</label>
+           <input type="number" id="employeeIdInput" placeholder="Enter User ID" />
+           <label for="employeeView">View:</label>
+           <select id="employeeView">
+             <option value="attendance">Attendance</option>
+             <option value="punchlog">Punch Log</option>
+             <option value="performance">Performance</option>
+           </select>
+          
+           <label for="employeeMonth">Month:</label>
+           <select id="employeeMonth">
+             <option value="">All</option>
+             <option value="1">January</option>
+             <option value="2">February</option>
+             <option value="3">March</option>
+             <option value="4">April</option>
+             <option value="5">May</option>
+             <option value="6">June</option>
+             <option value="7">July</option>
+             <option value="8">August</option>
+             <option value="9">September</option>
+             <option value="10">October</option>
+             <option value="11">November</option>
+             <option value="12">December</option>
+           </select>
+          
+           <label for="employeeDisplayMode">Display:</label>
+           <select id="employeeDisplayMode">
+             <option value="charts">Charts</option>
+             <option value="table">Table</option>
+           </select>
+          
+           <button id="loadEmployeeBtn">Load Data</button>
+           <button id="generateReportBtn" class="btn btn-outline-primary mt-3">Generate Report</button>
+        
+         </div>
+        
+         <!-- Output Display -->
+         <div id="employeeOutput" class="output-area"></div>
+        
+         <!-- Chart Display -->
+         <div id="employeeVisualOutput" class="employee-chart-row visual-area">
+           <canvas id="employeeChart1" class="employee-chart-canvas"></canvas>
+           <canvas id="employeeChart2" class="employee-chart-canvas"></canvas>
+         </div>
+        
+         <div id="radarWrapper">
+           <canvas id="employeeChart3"></canvas>
+         </div>
+       </div>
+      </div>
+      
+      <!-- ✅ Analytics Section -->
+      <section id="analyticsSection" style="display: none;">
+        <h2 class="section-title">📈 Trends Dashboard</h2>
+        
+        <!-- ========== Filter Controls ========== -->
+        <div class="filter-bar">
+       
+          <!-- Removed month selection -->
+          <button id="viewAllAnalyticsBtn">Load Analytics</button>
+          <button id="toggleAnalyticsViewBtn">Switch to Graph View</button>
+      
+        </div>
+      
+        <!-- 🔁 Container for Card View -->
+        <div id="analyticsCardView">
+          <div class="analytics-card-row">
+            <div class="info-card" id="cardPresenceHours">
+              <h4>Average Presence Hours</h4>
+              <p class="value">--</p>
+            </div>
+            <div class="info-card" id="cardLateIns">
+              <h4>Late-INs</h4>
+              <p class="value">--</p>
+            </div>
+            <div class="info-card" id="cardEarlyOuts">
+              <h4>Early-OUTs</h4>
+              <p class="value">--</p>
+            </div>
+            <div class="info-card" id="cardMismatches">
+              <h4>Punch Mismatches</h4>
+              <p class="value">--</p>
+            </div>
+            <div class="info-card" id="cardFlagged">
+              <h4>Flagged Employees</h4>
+              <p class="value">--</p>
+            </div>
+          </div>
+        </div>
+      
+        <div id="analyticsChartView" style="display: none;">
+          
+        <!-- Row 1 -->
+        <div class="analytics-row">
+          <div class="chart-card">
+            <h3 class="chart-title">Performance vs Presence</h3>
+            <canvas id="correlationChart"></canvas>
+          </div>
+        </div>
+        
+        <!-- Row 2 -->
+        <div class="analytics-row">
+          <div class="chart-card">
+            <h3 class="chart-title">Late-INs and Early-OUTs</h3>
+            <canvas id="trendChartLateEarly"></canvas>
+          </div>
+        </div>
+        
+          <!-- Row 3 -->
+          <div class="analytics-row" style="display: none;">
+            <div class="chart-card">
+              <h3 class="chart-title">Average Presence Hours</h3>
+              <canvas id="trendChartPresence"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!--Report Section-->
+      <div id="reportsSection" style="display: none;" class="report-dashboard">
+        
+        <!-- ====== Header & Controls ====== -->
+        <div class="report-header">
+          <h2>📄 Team Reports</h2>
+          <div class="report-controls">
+            <button id="loadReportBtn">🔄 Generate</button>
+          </div>
+        </div>
+        
+        <!-- ====== Metric Cards ====== -->
+        <div id="reportMetricsRow" class="report-cards-row">
+          <!-- Cards will be injected by JS -->
+        </div>
+        
+        <!-- ====== Charts Row ====== -->
+        <div class="report-charts-row">
+          <!-- Bar Chart -->
+          <div class="report-chart-card">
+            <h3>Top Deviations from Expected Hours</h3>
+            <canvas id="reportBarChart" height="200"></canvas>
+          </div>
+          
+          <!-- Pie Chart -->
+          <div class="report-chart-card">
+            <h3>Mismatch & Anomaly Breakdown</h3>
+            <canvas id="reportPieChart" height="200"></canvas>
+          </div>
+          
+          <!-- Line Chart -->
+          <div class="report-chart-card">
+            <h3>Final Score Trend</h3>
+            <canvas id="reportLineChart" height="200"></canvas>
+          </div>
+          
+          <!-- Anomaly Line Chart -->
+          <div class="report-chart-card full-width">
+            <h3>Monthly Anomaly Trend</h3>
+            <canvas id="anomalyLineChart" height="180"></canvas>
+          </div>
 
+          <!-- Attendance Line Chart -->
+          <div class="report-chart-card full-width">
+            <h3>Monthly Attendance Trend</h3>
+            <canvas id="attendanceLineChart" height="400"></canvas>
+          </div>
+        </div>
+        
+        <!-- ====== Flagged Summary Ring ====== -->
+        <div id="flaggedUserCards" class="report-cards-row">
+          <div class="report-card neon-hover">
+            <div class="circular-progress-wrapper">
+              <div class="circular-progress" data-percent="72" data-color="#f39c12">
+                <svg viewBox="0 0 120 120">
+                  <defs>
+                    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stop-color="#f39c12"/>
+                      <stop offset="100%" stop-color="#ff6f61"/>
+                    </linearGradient>
+                  </defs>
+                  <circle class="background" cx="60" cy="60" r="50"></circle>
+                  <circle class="progress" cx="60" cy="60" r="50" stroke="url(#grad)"></circle>
+                </svg>
+                <div class="progress-text">72%</div>
+              </div>
+              <p style="text-align:center; margin-top:6px; font-size: 13px;">37 users</p>
+            </div>
+            <p style="text-align:center; font-size:12px;">Moderately overworked with low scores.</p>
+          </div>
+        </div>
+      </div>
+      
+      
+      <!-- ⏱ Timing Insights Section -->
+      <div id="timingInsightsSection" class="main-section" style="display: none;">
+        <h2 class="section-title">
+          🕒 Timing Insights
+          <button id="viewLeaderboardBtn">View Leaderboard</button>
+        </h2>
+        
+        <!-- Metric Cards -->
+        <div id="timingCardsRow" class="mt-4"></div>
+        
+        <!-- Main Chart -->
+        <div class="mt-5 timing-chart-container">
+          <h3>Avg IN & OUT Time by Day</h3>
+          <canvas id="avgInOutChart" height="100"></canvas>
+        </div>
+      </div>
+      
+      <!-- 👑 Leaderboard Section -->
+      <div id="leaderboardSection" class="main-section" style="display: none;">
+        <h2 class="section-title">
+          👑 Top Consistent Employees
+          <button id="backToInsightsBtn">Back to Insights</button>
+        </h2>
+        
+        <!-- Leaderboard Cards -->
+        <div id="topConsistentList" class="mt-3"></div>
+        
+        <!-- Line Chart -->
+        <div class="timing-chart-container">
+          <div id="chartFilter" class="compare-user-controls">
+            <input type="text" id="compareUser1" class="compare-input" placeholder="UserID 1">
+            <input type="text" id="compareUser2" class="compare-input" placeholder="UserID 2 (optional)">
+            <button id="compareUsersBtn" class="compare-btn">🔍 Compare</button>
+          </div>
+          <canvas id="topConsistentChart" height="120" class="mt-4"></canvas>
+          <button id="revertTopChartBtn" class="compare-btn revert-btn" style="display: none;">🔁 Revert to Top 5</button>
+        </div>
+      </div>
+
+
+
+    
     </main>
-
+    
     <!-- 🔒 Logout -->
     <div class="logout-container">
       <form action="{{ url_for('logout') }}" method="get">
         <a id="logoutBtn" href="/logout">Logout</a>
       </form>
     </div>
-  </div>
 
+  </div>
+  
   <!-- 🎙️ JARVIS Icon -->
   <img src="{{ url_for('static', filename='Pictures/Arc_reactor.png') }}" id="jarvisBtn" title="Activate J.A.R.V.I.S." />
-
+   
   <!-- 🔊 Audio -->
   <audio id="jarvisWorking" src="/static/jarvis_working.mp3"></audio>
   <audio id="jarvisError" src="/static/jarvis_error.mp3"></audio>
-
+   
   <!-- 📜 Scripts -->
   <script src="{{ url_for('static', filename='js/kpi.js') }}"></script>
   <script src="{{ url_for('static', filename='js/dashboard_admin.js') }}"></script>
@@ -502,6 +524,6 @@
   <script src="{{ url_for('static', filename='js/report.js') }}"></script>
   <script src="{{ url_for('static', filename='js/time.js') }}"></script>
   <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-
+  
 </body>
 </html>
