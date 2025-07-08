@@ -287,7 +287,7 @@ canvas#reportLineChart {
 
 /* Exclusive Dark Theme for Report Section */
 #reportsSection.report-dashboard {
-  background-color: #000000;
+  background-color: #111;
   color: #ffffff;
   padding: 20px;
   min-height: 100vh;

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login Audit Log</title>
+  <meta http-equiv="refresh" content="300"> <!-- Auto-refresh every 300 seconds (5 min) -->
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+    th {
+      background-color: #f0f0f0;
+    }
+    a {
+      text-decoration: none;
+      color: #007bff;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h2>Login Audit Log (Auto-refresh every 1 hour)</h2>
+  <table>
+    <tr><th>User ID</th><th>Login Time</th></tr>
+    {% for row in records %}
+      <tr>
+        <td>{{ row.userid }}</td>
+        <td>{{ row.login_time }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+
+  <br>
+  <a href="{{ url_for('dashboard_admin') }}"><button>← Back to Admin Dashboard</button></a>
+</body>
+</html>

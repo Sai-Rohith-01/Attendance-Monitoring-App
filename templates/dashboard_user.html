@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Dashboard</title>
+
+  <!-- Fonts and Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_user.css') }}">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@1.2.0/dist/chartjs-chart-matrix.min.js"></script>
+
+</head>
+<body>
+
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo">LOGO</div>
+      <nav>
+        <ul>
+          <li>Home</li>
+          <li class="active">Profile</li>
+          <li>Settings</li>
+          <li>Logout</li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+      <header class="dashboard-header">
+        <input type="search" placeholder="Search...">
+        <div class="user-info">
+          <span>{{ user_name }}</span>
+          <span class="role-badge">User</span>
+        </div>
+      </header>
+
+      <section class="profile-section">
+        <div class="profile-left">
+          <img src="{{ url_for('static', filename='Pictures/emp.png') }}" class="avatar">
+          <h2>{{ user_name }}</h2>
+          <p class="role">Standard User</p>
+        </div>
+
+        <div class="profile-right">
+          <h3>Bio & Details</h3>
+          <div class="details-grid">
+            <div><strong>My Role:</strong> Employee</div>
+            <div><strong>Experience:</strong> Intermediate</div>
+            <div><strong>City:</strong> TBD</div>
+            <div><strong>Available:</strong> ✅</div>
+            <!-- Add more later -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Future sections: Socials, Work Stats, etc. -->
+    </main>
+  </div>
+
+</body>
+</html>

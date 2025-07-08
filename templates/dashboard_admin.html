@@ -28,7 +28,7 @@
     <!-- Sidebar -->
      <aside class="sidebar">
       <div class="logo">
-        <i class="fa-solid fa-user-tie"></i> <span>Welcome, Admin</span>
+        <i class="fa-solid fa-user-tie"></i> <span>Welcome, {{ user_name }}</span>
       </div>
       
       <nav>
@@ -37,10 +37,17 @@
           <li class="sidebar-item" id="employeesBtn">👥 Employees</li>
           <li class="sidebar-item" id="analyticsBtn">📈 Trends</li>
           <li class="sidebar-item" id="reportsBtn">📄 Reports</li>
-          <li class="sidebar-item" id="timingInsightsTab">🕒Timing Insights</li>               
+          <li class="sidebar-item" id="timingInsightsTab">🕒Timing Insights</li>  
+          <!--Viw log-->
+          <a href="{{ url_for('login_history') }}">
+            <button style="padding:10px 20px; margin-top:20px;">View Login Logs</button>
+          </a>             
         </ul>
       </nav>
     </aside>
+
+    
+
     
     <!-- 🌙 Global Dark Mode Toggle -->
      <div id="globalDarkToggle">

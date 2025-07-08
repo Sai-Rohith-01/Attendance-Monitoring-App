@@ -15,9 +15,165 @@ app.secret_key = 'your_secret_key_here'
 
 # ========== USER AUTH DATA ==========
 users = {
-    'admin1': {'password': 'adminpass', 'role': 'admin'},
-    'user1': {'password': 'userpass', 'role': 'user'}
+    'admin1': {'password': 'admin123', 'role': 'admin'},
+    'user1': {'password': 'userpass123', 'role': 'user'}
 }
+
+# ==================== CONNECTION ==========================
+from database import get_connection
+import hashlib
+
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def verify_password(input_password, stored_hash):
+    return hash_password(input_password) == stored_hash
+
+
+# ======================================= LOGIN & LOGOUT ======================================
+
+@app.route('/')
+def login():
+    error = request.args.get("auth") == "fail"
+    success = request.args.get("auth") == "success"
+    role = request.args.get("role") if success else ""
+    first_visit = request.args.get("fresh") == "true"
+    return render_template('login.html', error=error, login_success=success, login_role=role, first_visit=first_visit)
+
+@app.route('/login', methods=['POST'])
+def do_login():
+    username = request.form['username'].strip().lower()
+    password = request.form['password'].strip()
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM employee_logins WHERE userid = %s", (username,))
+        user = cursor.fetchone()
+        conn.close()
+
+        if user and verify_password(password, user['password_hash']):
+            session['username'] = username
+            session['role'] = user.get('role', 'user')
+
+            # Optional: Insert login record
+            try:
+                audit_conn = get_connection()
+                audit_cursor = audit_conn.cursor()
+                audit_cursor.execute("INSERT INTO login_audit (userid) VALUES (%s)", (username,))
+                audit_conn.commit()
+                audit_conn.close()
+            except:
+                pass  # Skip logging if DB not available
+
+            return redirect(url_for('login', auth="success", role=session['role']))
+
+    except:
+        # Fall back to hardcoded users if DB fails
+        user = users.get(username)
+        if user and user['password'] == password:
+            session['username'] = username
+            session['role'] = user['role']
+            return redirect(url_for('login', auth="success", role=user['role']))
+
+    return redirect(url_for('login', auth="fail"))
+
+
+
+
+# ==================================== ADMIN DASHBOARD ROUTE =========================================
+
+@app.route('/dashboard_admin')
+def dashboard_admin():
+    if session.get('role') != 'admin':
+        return redirect(url_for('login'))
+
+    userid = session.get('username')
+
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Fetch the full name of the admin
+    cursor.execute("SELECT name FROM employee_logins WHERE userid = %s", (userid,))
+    user = cursor.fetchone()
+    user_name = user['name'] if user else 'Admin'
+
+    # Load today's stats (same as your original logic)
+    today = datetime.today().date()
+    today_df = paired_df[paired_df['DATE_NEW'] == today].copy()
+    total_employees = today_df['Userid'].nunique()
+
+    today_df['IN'] = pd.to_datetime(today_df['IN'], errors='coerce')
+    avg_login_time = today_df['IN'].dropna().mean()
+    avg_login = avg_login_time.strftime('%H:%M') if pd.notnull(avg_login_time) else "N/A"
+
+    mismatches_today = 0  # Placeholder
+
+    conn.close()
+
+    return render_template(
+        'dashboard_admin.html',
+        total_employees=total_employees,
+        avg_login=avg_login,
+        mismatches_today=mismatches_today,
+        user_name=user_name
+    )
+
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
+
+# ========================================= USER DASHBOARD ROUTE ===================================
+
+@app.route('/dashboard_user')
+def dashboard_user():
+    if session.get('role') != 'user':
+        return redirect(url_for('login'))
+
+    userid = session.get('username')
+
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT name FROM employee_logins WHERE userid = %s", (userid,))
+    user = cursor.fetchone()
+    user_name = user['name'] if user else 'User'
+
+    conn.close()
+
+    return render_template('dashboard_user.html', user_name=user_name)
+
+
+# ================= Login History ========================
+@app.route('/login_history')
+def login_history():
+    if session.get('role') != 'admin':
+        return redirect(url_for('login'))
+
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # ========== Auto-delete logs older than 5 mins (FOR TESTING) ==========
+    cursor.execute("DELETE FROM login_audit WHERE login_time < NOW() - INTERVAL 5 MINUTE")
+
+    # ========== Future logic: Keep all logs ==========
+    # (Uncomment this in future and remove the DELETE query above)
+    # cursor.execute("SELECT * FROM login_audit ORDER BY login_time DESC")
+
+    # For now: Load only recent 5-minute logs
+    cursor.execute("SELECT * FROM login_audit ORDER BY login_time DESC")
+
+    records = cursor.fetchall()
+    conn.close()
+
+    return render_template("login_history.html", records=records)
+
+
+
 
 # ========== CACHE FILE ==========
 CACHE_FILE = "preprocessed_data.pkl"
@@ -206,66 +362,6 @@ def clear_cache():
 
 
 
-# ======================================= LOGIN & LOGOUT ======================================
-
-@app.route('/')
-def login():
-    error = request.args.get("auth") == "fail"
-    success = request.args.get("auth") == "success"
-    role = request.args.get("role") if success else ""
-    first_visit = request.args.get("fresh") == "true"
-    return render_template('login.html', error=error, login_success=success, login_role=role, first_visit=first_visit)
-
-@app.route('/login', methods=['POST'])
-def do_login():
-    username = request.form['username'].strip().lower()
-    password = request.form['password'].strip()
-    user = users.get(username)
-    if user and user['password'] == password:
-        session['username'] = username
-        session['role'] = user['role']
-        return redirect(url_for('login', auth="success", role=user['role']))
-    return redirect(url_for('login', auth="fail"))
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('login'))
-
-
-
-# ==================================== ADMIN DASHBOARD ROUTE =========================================
-
-@app.route('/dashboard_admin')
-def dashboard_admin():
-    if session.get('role') != 'admin':
-        return redirect(url_for('login'))
-
-    today = datetime.today().date()
-    today_df = paired_df[paired_df['DATE_NEW'] == today].copy()
-    total_employees = today_df['Userid'].nunique()
-
-    today_df['IN'] = pd.to_datetime(today_df['IN'], errors='coerce')
-    avg_login_time = today_df['IN'].dropna().mean()
-    avg_login = avg_login_time.strftime('%H:%M') if pd.notnull(avg_login_time) else "N/A"
-
-    mismatches_today = 0  # Placeholder (not implemented)
-
-    return render_template(
-        'dashboard_admin.html',
-        total_employees=total_employees,
-        avg_login=avg_login,
-        mismatches_today=mismatches_today
-    )
-
-
-# ========================================= USER DASHBOARD ROUTE ===================================
-
-@app.route('/dashboard_user')
-def dashboard_user():
-    if session.get('role') != 'user':
-        return redirect(url_for('login'))
-    return render_template('dashboard_user.html')
 
 
 # ========================================== DAILY KPI ROUTE ==================================
