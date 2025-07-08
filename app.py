@@ -126,28 +126,6 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
-
-# ========================================= USER DASHBOARD ROUTE ===================================
-
-@app.route('/dashboard_user')
-def dashboard_user():
-    if session.get('role') != 'user':
-        return redirect(url_for('login'))
-
-    userid = session.get('username')
-
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    cursor.execute("SELECT name FROM employee_logins WHERE userid = %s", (userid,))
-    user = cursor.fetchone()
-    user_name = user['name'] if user else 'User'
-
-    conn.close()
-
-    return render_template('dashboard_user.html', user_name=user_name)
-
-
 # ================= Login History ========================
 @app.route('/login_history')
 def login_history():
@@ -1759,11 +1737,53 @@ def get_employee_in_pattern():
 
 
 
-        
+# ========================================= USER DASHBOARD ROUTE ===================================
+
+@app.route('/dashboard_user')
+def dashboard_user():
+    if session.get('role') != 'user':
+        return redirect(url_for('login'))
+
+    userid = session.get('username')
+
+    # Fetch user name from DB
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT name FROM employee_logins WHERE userid = %s", (userid,))
+    user = cursor.fetchone()
+    user_name = user['name'] if user else 'User'
+
+    conn.close()
+
+    # Get Final_Score from user_stats dataframe
+    try:
+        uid_int = int(userid)
+        user_row = user_stats[user_stats['Userid'] == uid_int]
+
+        if not user_row.empty:
+            final_score = user_row.iloc[0]['Final_Score']  # Value between 0 and 1
+            rating = round(final_score * 100)              # Scale to 0–100
+        else:
+            rating = 50  # Fallback default rating
+
+    except Exception as e:
+        print("[USER RATING ERROR]", e)
+        rating = 50  # Safe fallback
+
+    return render_template(
+        'dashboard_user.html',
+        user_name=user_name,
+        rating=rating
+    )
+
+
+
 # ==========================================TESTING====================================
 # print(paired_df.columns.tolist())
 # print("[DEBUG] daily_summary columns:", daily_summary.columns.tolist())
-# print(paired_df[paired_df.Userid==25])
+# print(final_scores[final_scores.Userid==25])
+# print(user_stats.head(2))
 
 # ==================================== Register blueprint=============================
 app.register_blueprint(reports_bp)

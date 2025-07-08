@@ -8,6 +8,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
 
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+
   <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_user.css') }}">
 
   <!-- Chart.js -->
@@ -18,51 +21,121 @@
 <body>
 
   <div class="dashboard-container">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="logo">LOGO</div>
-      <nav>
-        <ul>
-          <li>Home</li>
-          <li class="active">Profile</li>
-          <li>Settings</li>
-          <li>Logout</li>
-        </ul>
-      </nav>
-    </aside>
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="logo" style="display: none;">LOGO</div>
+  <nav>
+    <ul>
+      <li><i class="fa-solid fa-house"></i> Home</li>
+      <li><i class="fa-solid fa-chart-line"></i> My Activity</li>
+      <li><i class="fa-solid fa-scroll"></i> My Applications</li>
+      <li><i class="fa-solid fa-gear"></i> Settings</li>
 
-    <!-- Main Content -->
-    <main class="main">
-      <header class="dashboard-header">
-        <input type="search" placeholder="Search...">
-        <div class="user-info">
-          <span>{{ user_name }}</span>
-          <span class="role-badge">User</span>
-        </div>
-      </header>
+      <!-- ✅ Extras Toggle -->
+      <li id="extrasToggle"><i class="fa-solid fa-puzzle-piece"></i> Extras</li>
+      <ul id="extrasDropdown" class="extras-hidden">
+        <li>
+          <label class="autobot-checkbox">
+            <input type="checkbox" id="autobotTypingToggle">
+            Enable Autobots?
+          </label>
+        </li>
+        <li>
+          <button id="audioToggleBtn" class="audio-toggle-btn">🔊</button>
+        </li>
+      </ul>
 
-      <section class="profile-section">
-        <div class="profile-left">
-          <img src="{{ url_for('static', filename='Pictures/emp.png') }}" class="avatar">
-          <h2>{{ user_name }}</h2>
-          <p class="role">Standard User</p>
-        </div>
+      <li><a href="#" id="logoutLink" style="text-decoration: none">Logout</a></li>
+    </ul>
+  </nav>
+</aside>
 
-        <div class="profile-right">
-          <h3>Bio & Details</h3>
-          <div class="details-grid">
-            <div><strong>My Role:</strong> Employee</div>
-            <div><strong>Experience:</strong> Intermediate</div>
-            <div><strong>City:</strong> TBD</div>
-            <div><strong>Available:</strong> ✅</div>
-            <!-- Add more later -->
-          </div>
-        </div>
-      </section>
 
-      <!-- Future sections: Socials, Work Stats, etc. -->
-    </main>
-  </div>
+
+
+    <!-- MAIN CONTENT -->
+<main class="main">
+  <!-- <header class="dashboard-header">
+    <div class="user-info">
+      <span>{{ user_name }}</span>
+      <span class="role-badge">User</span>
+    </div>
+  </header> -->
+
+  <!-- ======================= HOME / EMPLOYEE ID CARD ======================= -->
+  <section id="homeSection" class="dashboard-section">
+    <div class="id-card {% if rating >= 70 %}gold{% elif rating >= 60 %}silver{% elif rating >= 40 %}bronze{% endif %}">
+      <img src="{{ url_for('static', filename='Pictures/emp.png') }}" class="avatar" alt="Profile Picture">
+      <div class="id-details">
+        <h2>{{ user_name }}</h2>
+        <p><strong>Role:</strong> Employee</p>
+        <p><strong>City:</strong> Hyderabad</p>
+        <p><strong>User ID:</strong> {{ session['username'] }}</p>
+        <p><strong>Status:</strong> Active</p>
+        <p><strong>Performance:</strong> {{ rating }} / 100</p>
+        <div class="star-rating">
+  {% set stars = (rating // 20) | int %}
+  {% for i in range(5) %}
+    {% if i < stars %}
+      <!-- Filled Star -->
+      <svg class="star" viewBox="0 0 24 24">
+        <polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9"/>
+      </svg>
+    {% else %}
+      <!-- Empty Star -->
+      <svg class="star inactive" viewBox="0 0 24 24">
+        <polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9"/>
+      </svg>
+    {% endif %}
+  {% endfor %}
+</div>
+
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= MY ACTIVITY ======================= -->
+  <section id="activitySection" class="dashboard-section" style="display: none;">
+    <h3>My Activity</h3>
+    <p>This is where activity charts and data will go.</p>
+  </section>
+
+  <!-- ======================= MY APPLICATIONS ======================= -->
+  <section id="applicationsSection" class="dashboard-section" style="display: none;">
+    <h3>My Applications</h3>
+    <p>Submitted forms, requests, or records will be shown here.</p>
+  </section>
+
+  <!-- ======================= SETTINGS ======================= -->
+  <section id="settingsSection" class="dashboard-section" style="display: none;">
+    <h3>Settings</h3>
+    <p>Profile customization and preferences coming soon.</p>
+  </section>
+</main>
+
+
+  
+ <!-- ================= Top Right Activity Timer + Pause ================= -->
+<div class="activity-timer-wrapper">
+  <div id="activityTimer">00:00</div>
+  <button id="pauseTimerBtn">Pause</button>
+</div>
+
+  
+
+<!--Autobot Controls-->
+  <div class="autobots-controls">
+  <button id="AutobotsBtn" class="Autobots-button">
+    <img src="{{ url_for('static', filename='Pictures/autobots.png') }}" alt="Autobots" />
+  </button>
+</div>
+
+
+
+<!-- Include JS -->
+<script src="{{ url_for('static', filename='js/dashboard_user.js') }}"></script>
+
 
 </body>
 </html>
