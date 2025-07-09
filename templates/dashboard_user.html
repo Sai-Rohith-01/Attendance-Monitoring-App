@@ -20,122 +20,191 @@
 </head>
 <body>
 
-  <div class="dashboard-container">
-<!-- Sidebar -->
-<aside class="sidebar">
-  <div class="logo" style="display: none;">LOGO</div>
-  <nav>
-    <ul>
-      <li><i class="fa-solid fa-house"></i> Home</li>
-      <li><i class="fa-solid fa-chart-line"></i> My Activity</li>
-      <li><i class="fa-solid fa-scroll"></i> My Applications</li>
-      <li><i class="fa-solid fa-gear"></i> Settings</li>
+  <!-- ✅ Wrap all content inside #mainContent -->
+  <div id="mainContent">
+    <div class="dashboard-container">
 
-      <!-- ✅ Extras Toggle -->
-      <li id="extrasToggle"><i class="fa-solid fa-puzzle-piece"></i> Extras</li>
-      <ul id="extrasDropdown" class="extras-hidden">
-        <li>
-          <label class="autobot-checkbox">
-            <input type="checkbox" id="autobotTypingToggle">
-            Enable Autobots?
-          </label>
-        </li>
-        <li>
-          <button id="audioToggleBtn" class="audio-toggle-btn">🔊</button>
-        </li>
-      </ul>
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="logo" style="display: none;">LOGO</div>
+        <nav>
+          <ul>
+            <li><i class="fa-solid fa-house"></i> Home</li>
+            <li><i class="fa-solid fa-chart-line"></i> My Activity</li>
+            <li><i class="fa-solid fa-scroll"></i> My Applications</li>
+            <li><i class="fa-solid fa-gear"></i> Settings</li>
 
-      <li><a href="#" id="logoutLink" style="text-decoration: none">Logout</a></li>
-    </ul>
-  </nav>
-</aside>
+            <!-- ✅ Extras Toggle -->
+            <li id="extrasToggle"><i class="fa-solid fa-puzzle-piece"></i> Extras</li>
+            <ul id="extrasDropdown" class="extras-hidden">
+              <li>
+                <label class="autobot-checkbox">
+                  <input type="checkbox" id="autobotTypingToggle">
+                  Enable Autobots?
+                </label>
+              </li>
+              <li>
+                <button id="audioToggleBtn" class="audio-toggle-btn">🔊</button>
+              </li>
+            </ul>
 
+            <li><a href="#" id="logoutLink" style="text-decoration: none">Logout</a></li>
+          </ul>
+        </nav>
+      </aside>
 
+      <!-- Main -->
+      <main class="main">
+        <section id="homeSection" class="dashboard-section">
+          <div class="id-card {% if rating >= 70 %}gold{% elif rating >= 60 %}silver{% elif rating >= 40 %}bronze{% endif %}">
+            <img src="{{ url_for('static', filename='Pictures/emp.png') }}" class="avatar" alt="Profile Picture">
+            <div class="id-details">
+              <h2>{{ user_name }}</h2>
+              <p><strong>Role:</strong> Employee</p>
+              <p><strong>City:</strong> Hyderabad</p>
+              <p><strong>User ID:</strong> {{ session['username'] }}</p>
+              <p><strong>Status:</strong> Active</p>
+              <p><strong>Performance:</strong> {{ rating }} / 100</p>
+              <div class="star-rating">
+                {% set stars = (rating // 20) | int %}
+                {% for i in range(5) %}
+                  {% if i < stars %}
+                    <svg class="star" viewBox="0 0 24 24">
+                      <polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9"/>
+                    </svg>
+                  {% else %}
+                    <svg class="star inactive" viewBox="0 0 24 24">
+                      <polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9"/>
+                    </svg>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </section>
 
+        <section id="activitySection" class="dashboard-section" style="display: none;">
+          <h3>My Activity</h3>
+          <p>This is where activity charts and data will go.</p>
+        </section>
 
-    <!-- MAIN CONTENT -->
-<main class="main">
-  <!-- <header class="dashboard-header">
-    <div class="user-info">
-      <span>{{ user_name }}</span>
-      <span class="role-badge">User</span>
-    </div>
-  </header> -->
+        <section id="applicationsSection" class="dashboard-section" style="display: none;">
+          <h3>My Applications</h3>
+          <p>Submitted forms, requests, or records will be shown here.</p>
+        </section>
 
-  <!-- ======================= HOME / EMPLOYEE ID CARD ======================= -->
-  <section id="homeSection" class="dashboard-section">
-    <div class="id-card {% if rating >= 70 %}gold{% elif rating >= 60 %}silver{% elif rating >= 40 %}bronze{% endif %}">
-      <img src="{{ url_for('static', filename='Pictures/emp.png') }}" class="avatar" alt="Profile Picture">
-      <div class="id-details">
-        <h2>{{ user_name }}</h2>
-        <p><strong>Role:</strong> Employee</p>
-        <p><strong>City:</strong> Hyderabad</p>
-        <p><strong>User ID:</strong> {{ session['username'] }}</p>
-        <p><strong>Status:</strong> Active</p>
-        <p><strong>Performance:</strong> {{ rating }} / 100</p>
-        <div class="star-rating">
-  {% set stars = (rating // 20) | int %}
-  {% for i in range(5) %}
-    {% if i < stars %}
-      <!-- Filled Star -->
-      <svg class="star" viewBox="0 0 24 24">
-        <polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9"/>
-      </svg>
-    {% else %}
-      <!-- Empty Star -->
-      <svg class="star inactive" viewBox="0 0 24 24">
-        <polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9"/>
-      </svg>
-    {% endif %}
-  {% endfor %}
-</div>
+        <section id="settingsSection" class="dashboard-section" style="display: none;">
+          <h3>Settings</h3>
+          <p>Profile customization and preferences coming soon.</p>
+        </section>
+      </main>
 
-
+      <!-- Activity Timer -->
+      <div class="activity-timer-wrapper">
+        <div id="activityTimer">00:00</div>
+        <button id="pauseTimerBtn">Pause</button>
       </div>
-    </div>
-  </section>
 
-  <!-- ======================= MY ACTIVITY ======================= -->
-  <section id="activitySection" class="dashboard-section" style="display: none;">
-    <h3>My Activity</h3>
-    <p>This is where activity charts and data will go.</p>
-  </section>
+    </div> <!-- end .dashboard-container -->
+  </div> <!-- end #mainContent -->
 
-  <!-- ======================= MY APPLICATIONS ======================= -->
-  <section id="applicationsSection" class="dashboard-section" style="display: none;">
-    <h3>My Applications</h3>
-    <p>Submitted forms, requests, or records will be shown here.</p>
-  </section>
-
-  <!-- ======================= SETTINGS ======================= -->
-  <section id="settingsSection" class="dashboard-section" style="display: none;">
-    <h3>Settings</h3>
-    <p>Profile customization and preferences coming soon.</p>
-  </section>
-</main>
-
-
-  
- <!-- ================= Top Right Activity Timer + Pause ================= -->
-<div class="activity-timer-wrapper">
-  <div id="activityTimer">00:00</div>
-  <button id="pauseTimerBtn">Pause</button>
-</div>
-
-  
-
-<!--Autobot Controls-->
+  <!-- ❌ Autobots Button placed outside so it can animate independently -->
   <div class="autobots-controls">
-  <button id="AutobotsBtn" class="Autobots-button">
-    <img src="{{ url_for('static', filename='Pictures/autobots.png') }}" alt="Autobots" />
-  </button>
+    <button id="AutobotsBtn" class="Autobots-button">
+      <img src="{{ url_for('static', filename='Pictures/autobots.png') }}" alt="Autobots" />
+    </button>
+  </div>
+
+  <div id="autobotOverlay"></div>
+
+  <div id="tronWaveContainer">
+  <!-- 20 glowing bars -->
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
+  <div class="tron-bar"></div>
 </div>
 
 
 
-<!-- Include JS -->
-<script src="{{ url_for('static', filename='js/dashboard_user.js') }}"></script>
-
-
+  <!-- JS -->
+  <script src="{{ url_for('static', filename='js/dashboard_user.js') }}"></script>
 </body>
+
 </html>
