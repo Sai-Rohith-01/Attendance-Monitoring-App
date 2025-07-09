@@ -4,27 +4,28 @@
   <meta charset="UTF-8">
   <title>User Dashboard</title>
 
-  <!-- Fonts and Icons -->
+  <!-- === Fonts and Icons === -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
-
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-
   <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_user.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/user_activity.css') }}">
 
-  <!-- Chart.js -->
+  <!-- === Charts === -->
+  <script src="https://cdn.jsdelivr.net/npm/luxon"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@1.2.0/dist/chartjs-chart-matrix.min.js"></script>
-
 </head>
+
 <body>
 
-  <!-- ✅ Wrap all content inside #mainContent -->
+  <!-- === MAIN CONTENT WRAPPER === -->
   <div id="mainContent">
     <div class="dashboard-container">
 
-      <!-- Sidebar -->
+      <!-- === SIDEBAR === -->
       <aside class="sidebar">
         <div class="logo" style="display: none;">LOGO</div>
         <nav>
@@ -34,7 +35,7 @@
             <li><i class="fa-solid fa-scroll"></i> My Applications</li>
             <li><i class="fa-solid fa-gear"></i> Settings</li>
 
-            <!-- ✅ Extras Toggle -->
+            <!-- === EXTRAS DROPDOWN === -->
             <li id="extrasToggle"><i class="fa-solid fa-puzzle-piece"></i> Extras</li>
             <ul id="extrasDropdown" class="extras-hidden">
               <li>
@@ -53,8 +54,10 @@
         </nav>
       </aside>
 
-      <!-- Main -->
+      <!-- === MAIN PANEL === -->
       <main class="main">
+
+        <!-- ✅ HOME SECTION -->
         <section id="homeSection" class="dashboard-section">
           <div class="id-card {% if rating >= 70 %}gold{% elif rating >= 60 %}silver{% elif rating >= 40 %}bronze{% endif %}">
             <img src="{{ url_for('static', filename='Pictures/emp.png') }}" class="avatar" alt="Profile Picture">
@@ -83,23 +86,58 @@
           </div>
         </section>
 
+        <!-- ✅ MY ACTIVITY SECTION -->
         <section id="activitySection" class="dashboard-section" style="display: none;">
           <h3>My Activity</h3>
-          <p>This is where activity charts and data will go.</p>
+
+          <!-- 🔘 Toggle View -->
+          <div id="activityToggleBtns" class="view-toggle">
+            <button id="weeklyViewBtn" class="active">Weekly View</button>
+            <button id="monthlyViewBtn">Monthly View</button>
+          </div>
+
+          <!-- 📅 Weekly Controls -->
+          <div id="weeklyControls" class="filter-controls">
+            <label for="weekPicker">Select Week:</label>
+            <input type="date" id="weekPicker" />
+          </div>
+
+          <!-- 📆 Monthly Controls -->
+          <div id="monthlyControls" class="filter-controls" style="display: none;">
+            <label for="monthSelector">Select Month:</label>
+            <select id="monthSelector">
+              <!-- JS will populate -->
+            </select>
+          </div>
+
+          <!-- 🧾 Metric Cards -->
+          <div id="activityCardsRow" class="activity-cards-row">
+            <!-- Cards will be rendered here -->
+          </div>
+
+          <!-- 📈 Trend Chart -->
+          <div id="activityChartWrapper" class="chart-container">
+            <canvas id="activityTrendChart"></canvas>
+          </div>
         </section>
 
+
+
+        <!-- ✅ MY APPLICATIONS SECTION -->
         <section id="applicationsSection" class="dashboard-section" style="display: none;">
           <h3>My Applications</h3>
           <p>Submitted forms, requests, or records will be shown here.</p>
         </section>
 
+        <!-- ✅ SETTINGS SECTION -->
         <section id="settingsSection" class="dashboard-section" style="display: none;">
           <h3>Settings</h3>
           <p>Profile customization and preferences coming soon.</p>
         </section>
+
       </main>
 
-      <!-- Activity Timer -->
+      <!-- ✅ ACTIVITY TIMER -->
       <div class="activity-timer-wrapper">
         <div id="activityTimer">00:00</div>
         <button id="pauseTimerBtn">Pause</button>
@@ -108,7 +146,7 @@
     </div> <!-- end .dashboard-container -->
   </div> <!-- end #mainContent -->
 
-  <!-- ❌ Autobots Button placed outside so it can animate independently -->
+  <!-- ✅ AUTOBOTS BUTTON AND OVERLAY -->
   <div class="autobots-controls">
     <button id="AutobotsBtn" class="Autobots-button">
       <img src="{{ url_for('static', filename='Pictures/autobots.png') }}" alt="Autobots" />
@@ -117,94 +155,27 @@
 
   <div id="autobotOverlay"></div>
 
+  <!-- ✅ TRON WAVE BARS -->
   <div id="tronWaveContainer">
-  <!-- 20 glowing bars -->
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-  <div class="tron-bar"></div>
-</div>
+    <!-- 20+ glowing bars -->
+    {% for i in range(80) %}
+      <div class="tron-bar"></div>
+    {% endfor %}
+  </div>
+
+  <!-- {% if session.get('username') %}
+  <p>User ID: {{ session['username'] }}</p>
+{% else %}
+  <p>No user session found</p>
+{% endif %} -->
 
 
 
-  <!-- JS -->
+
+
+  <!-- ✅ JS -->
   <script src="{{ url_for('static', filename='js/dashboard_user.js') }}"></script>
-</body>
+  <script src="{{ url_for('static', filename='js/user_activity.js') }}"></script>
 
+</body>
 </html>

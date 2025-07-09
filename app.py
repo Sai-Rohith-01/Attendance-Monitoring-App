@@ -1742,7 +1742,8 @@ def get_employee_in_pattern():
 @app.route('/dashboard_user')
 def dashboard_user():
     if session.get('role') != 'user':
-        return redirect(url_for('login'))
+        return redirect(url_for('dashboard_user'))
+
 
     userid = session.get('username')
 
@@ -1778,9 +1779,134 @@ def dashboard_user():
     )
 
 
+from flask import request, jsonify
+from datetime import datetime, timedelta
+import pandas as pd
+
+@app.route('/get_user_activity_data')
+def get_user_activity_data():
+    userid = request.args.get('userid', type=int)
+    view = request.args.get('view')  # "weekly" or "monthly"
+    date_str = request.args.get('date')   # For weekly
+    month_str = request.args.get('month') # For monthly
+
+    if not userid or not view:
+        return jsonify({"error": "Missing required parameters"}), 400
+
+    user_paired = paired_df[paired_df["Userid"] == userid].copy()
+    user_summary = daily_summary[daily_summary["Userid"] == userid].copy()
+
+    if view == "weekly":
+        if not date_str:
+            return jsonify({"error": "Missing date for weekly view"}), 400
+        try:
+            start_date = pd.to_datetime(date_str)
+            end_date = start_date + timedelta(days=6)
+        except:
+            return jsonify({"error": "Invalid date format"}), 400
+
+    elif view == "monthly":
+        if not month_str:
+            return jsonify({"error": "Missing month for monthly view"}), 400
+        try:
+            start_date = pd.to_datetime(month_str + "-01")
+            end_date = (start_date + pd.offsets.MonthEnd(0)).to_pydatetime()
+        except:
+            return jsonify({"error": "Invalid month format"}), 400
+
+    else:
+        return jsonify({"error": "Invalid view type"}), 400
+
+    # Filtered data
+    paired_mask = (user_paired["DATE_NEW"] >= start_date) & (user_paired["DATE_NEW"] <= end_date)
+    summary_mask = (user_summary["DATE_NEW"] >= start_date) & (user_summary["DATE_NEW"] <= end_date)
+
+    filtered_paired = user_paired[paired_mask]
+    filtered_summary = user_summary[summary_mask]
+
+    # ===== Compute average IN/OUT times =====
+    def compute_avg_time(timeseries):
+        if timeseries.empty:
+            return "NA"
+        total_secs = sum(t.hour * 3600 + t.minute * 60 + t.second for t in timeseries)
+        avg_secs = total_secs / len(timeseries)
+        return str(timedelta(seconds=int(avg_secs)))[:5]
+
+    # Use FIRST IN and LAST OUT per day
+    first_ins = filtered_paired.groupby("DATE_NEW")["IN"].min().dropna()
+    last_outs = filtered_paired.groupby("DATE_NEW")["OUT"].max().dropna()
+
+    avg_in = compute_avg_time(first_ins)
+    avg_out = compute_avg_time(last_outs)
+
+    # ===== Metrics =====
+    present_days = int((filtered_summary["Presence_Hours"] > 0).sum())
+    total_workdays = (end_date - start_date).days + 1
+    attendance_percent = round((present_days / total_workdays) * 100, 1) if total_workdays > 0 else 0
+
+    total_hours = filtered_summary.loc[filtered_summary["Presence_Hours"] > 0, "Presence_Hours"].sum()
+    avg_hours = round(total_hours / present_days, 2) if present_days > 0 else 0
+
+    absent_days = total_workdays - present_days
+
+    # Late INs: first IN after 09:00
+    late_cutoff = datetime.strptime("09:00", "%H:%M").time()
+    late_ins = int((first_ins.dt.time > late_cutoff).sum())
+
+    # Early OUTs: last OUT before 17:00
+    early_cutoff = datetime.strptime("17:00", "%H:%M").time()
+    early_outs = int((last_outs.dt.time < early_cutoff).sum())
+
+    # Chart Data
+    chart_labels, chart_values = [], []
+    chart_df = filtered_summary.sort_values("DATE_NEW")
+
+    if view == "weekly":
+        for _, row in chart_df.iterrows():
+            chart_labels.append(row["DATE_NEW"].strftime("%a"))  # Mon, Tue...
+            chart_values.append(round(row["Presence_Hours"], 2))
+    else:
+        for _, row in chart_df.iterrows():
+            chart_labels.append(row["DATE_NEW"].strftime("%d-%b"))
+            chart_values.append(round(row["Presence_Hours"], 2))
+
+    # Today
+    present_date = datetime.today().strftime("%d %b %Y")
+
+    return jsonify({
+        "present_date": present_date,
+        "avg_in": avg_in,
+        "avg_out": avg_out,
+        "avg_hours": avg_hours,
+        "total_days": total_workdays,
+        "present_days": present_days,
+        "absent_days": absent_days,
+        "attendance_percent": attendance_percent,
+        "late_ins": late_ins,
+        "early_outs": early_outs,
+        "chart_labels": chart_labels,
+        "chart_values": chart_values
+    })
+
+
+
+
+from flask import session
+
+@app.route('/get_session_info')
+def get_session_info():
+    if 'username' in session:
+        return jsonify({
+            'userid': session['username'],
+            'role': session.get('role', 'user')
+        })
+    return jsonify({'error': 'not_logged_in'}), 401
+
+
 
 # ==========================================TESTING====================================
 # print(paired_df.columns.tolist())
+# print(daily_summary.columns.tolist())
 # print("[DEBUG] daily_summary columns:", daily_summary.columns.tolist())
 # print(final_scores[final_scores.Userid==25])
 # print(user_stats.head(2))
