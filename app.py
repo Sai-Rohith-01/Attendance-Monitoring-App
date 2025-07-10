@@ -53,6 +53,7 @@ def do_login():
         conn.close()
 
         if user and verify_password(password, user['password_hash']):
+            session['userid'] = user['userid'] 
             session['username'] = username
             session['role'] = user.get('role', 'user')
 
@@ -1898,11 +1899,50 @@ def get_session_info():
     if 'username' in session:
         return jsonify({
             'userid': session['username'],
-            'role': session.get('role', 'user')
+            'role': session.get('role', 'user'),
+            "avatar": session.get("avatar", "")  # <-- Add this
         })
     return jsonify({'error': 'not_logged_in'}), 401
 
 
+
+@app.route('/change_profile_avatar', methods=['POST'])
+def change_profile_avatar():
+    if 'username' not in session:
+        return jsonify({"success": False, "message": "Unauthorized"}), 401
+
+    avatar = request.json.get('avatar')
+    if not avatar or not avatar.endswith(('.jpg', '.png')):
+        return jsonify({"success": False, "message": "Invalid avatar"}), 400
+
+    session['avatar'] = avatar  # ✅ Only save in session (not DB)
+    return jsonify({"success": True})
+
+
+
+# import random
+
+# @app.route('/assign_random_avatars')
+# def assign_random_avatars():
+#     try:
+#         conn = get_connection()
+#         cursor = conn.cursor()
+
+#         cursor.execute("SELECT userid FROM employee_logins")
+#         users = cursor.fetchall()
+
+#         avatars = [f"avatar{i}.jpg" for i in range(1, 7)]
+
+#         for (userid,) in users:
+#             random_avatar = random.choice(avatars)
+#             cursor.execute("UPDATE employee_logins SET avatar = %s WHERE userid = %s", (random_avatar, userid))
+
+#         conn.commit()
+#         conn.close()
+#         return "Random avatars assigned to all users!"
+
+#     except Exception as e:
+#         return f"Error: {str(e)}"
 
 # ==========================================TESTING====================================
 # print(paired_df.columns.tolist())

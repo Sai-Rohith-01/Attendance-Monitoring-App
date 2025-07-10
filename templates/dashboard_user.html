@@ -27,7 +27,13 @@
 
       <!-- === SIDEBAR === -->
       <aside class="sidebar">
-        <div class="logo" style="display: none;">LOGO</div>
+        <header class="dashboard-header">
+          <div class="logo">{{ session['username'] }}</div>
+          <div class="user-info">
+            <img id="profileAvatar" class="profile-avatar" src="/static/Pictures/avatar1.jpg" alt="Profile" />
+          </div>
+        </header>
+
         <nav>
           <ul>
             <li><i class="fa-solid fa-house"></i> Home</li>
@@ -49,7 +55,10 @@
               </li>
             </ul>
 
-            <li><a href="#" id="logoutLink" style="text-decoration: none">Logout</a></li>
+            <li class="logout-item">
+  <a href="#" id="logoutLink" style="text-decoration: none">Logout</a>
+</li>
+
           </ul>
         </nav>
       </aside>
@@ -60,7 +69,7 @@
         <!-- ✅ HOME SECTION -->
         <section id="homeSection" class="dashboard-section">
           <div class="id-card {% if rating >= 70 %}gold{% elif rating >= 60 %}silver{% elif rating >= 40 %}bronze{% endif %}">
-            <img src="{{ url_for('static', filename='Pictures/emp.png') }}" class="avatar" alt="Profile Picture">
+            <img id="homeAvatar" src="{{ url_for('static', filename='Pictures/avatar1.png') }}" class="avatar" alt="Profile Picture">
             <div class="id-details">
               <h2>{{ user_name }}</h2>
               <p><strong>Role:</strong> Employee</p>
@@ -109,6 +118,11 @@
               <!-- JS will populate -->
             </select>
           </div>
+      
+          <!-- 🔘 Load Data -->
+          <div class="load-activity-btn-wrapper">
+            <button id="loadActivityBtn">Load Data</button>
+          </div>
 
           <!-- 🧾 Metric Cards -->
           <div id="activityCardsRow" class="activity-cards-row">
@@ -130,10 +144,40 @@
         </section>
 
         <!-- ✅ SETTINGS SECTION -->
-        <section id="settingsSection" class="dashboard-section" style="display: none;">
-          <h3>Settings</h3>
-          <p>Profile customization and preferences coming soon.</p>
-        </section>
+<section id="settingsSection" class="dashboard-section" style="display: none;">
+  <div class="settings-wrapper">
+    <h3>Settings</h3>
+
+    <!-- 🔒 Change Password (Simulated) -->
+    <div class="settings-block">
+      <h4>Change Password</h4>
+      <div class="form-row">
+        <input type="password" id="currentPassword" placeholder="Current Password" />
+        <input type="password" id="newPassword" placeholder="New Password" />
+        <button id="updatePasswordBtn">Update Password</button>
+      </div>
+      <div class="settings-error" id="passwordError" style="display: none;"></div>
+    </div>
+
+    <!-- 🖼️ Select Avatar -->
+    <div class="settings-block">
+      <h4>Select Profile Avatar</h4>
+      <div id="avatarGrid" class="avatar-grid">
+        <img src="/static/Pictures/avatar1.jpg" data-avatar="avatar1.jpg" class="avatar-option" />
+        <img src="/static/Pictures/avatar2.jpg" data-avatar="avatar2.jpg" class="avatar-option" />
+        <img src="/static/Pictures/avatar3.jpg" data-avatar="avatar3.jpg" class="avatar-option" />
+        <img src="/static/Pictures/avatar4.jpg" data-avatar="avatar4.jpg" class="avatar-option" />
+        <img src="/static/Pictures/avatar5.jpg" data-avatar="avatar5.jpg" class="avatar-option" />
+        <img src="/static/Pictures/avatar6.jpg" data-avatar="avatar6.jpg" class="avatar-option" />
+      </div>
+      <button id="saveAvatarBtn">Save Avatar</button>
+      <div class="settings-error" id="avatarError" style="display: none;"></div>
+    </div>
+  </div>
+</section>
+
+
+
 
       </main>
 
@@ -170,6 +214,8 @@
 {% endif %} -->
 
 
+  <audio id="autobotsAudio" src="static\audio\autobots\system crashed.mp3" preload="auto"></audio>
+  <div id="errorPrompt" class="error-prompt" style="display: none;"></div>
 
 
 

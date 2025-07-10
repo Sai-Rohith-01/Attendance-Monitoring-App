@@ -1,3 +1,4 @@
+// ===== USER ACTIVITY SECTION =====
 let USER_ID = null;
 let activityChart = null;
 
@@ -11,7 +12,6 @@ async function fetchUserIdFromSession() {
       console.log("[✔] USER_ID:", USER_ID);
       setupActivityEventListeners();
       initializeMonthSelector();
-      fetchAndRenderActivity("weekly");
     } else {
       console.warn("No active session.");
     }
@@ -22,15 +22,12 @@ async function fetchUserIdFromSession() {
 
 // ===== Setup Buttons and Event Listeners =====
 function setupActivityEventListeners() {
-  const weeklyBtn = document.getElementById("weeklyViewBtn");
-  const monthlyBtn = document.getElementById("monthlyViewBtn");
-  const weekPicker = document.getElementById("weekPicker");
-  const monthSelector = document.getElementById("monthSelector");
-
-  weeklyBtn.addEventListener("click", () => setActiveView("weekly"));
-  monthlyBtn.addEventListener("click", () => setActiveView("monthly"));
-  weekPicker.addEventListener("change", () => fetchAndRenderActivity("weekly"));
-  monthSelector.addEventListener("change", () => fetchAndRenderActivity("monthly"));
+  document.getElementById("weeklyViewBtn").addEventListener("click", () => setActiveView("weekly"));
+  document.getElementById("monthlyViewBtn").addEventListener("click", () => setActiveView("monthly"));
+  document.getElementById("loadActivityBtn").addEventListener("click", () => {
+    const view = document.getElementById("weeklyControls").style.display === "block" ? "weekly" : "monthly";
+    fetchAndRenderActivity(view);
+  });
 }
 
 // ===== Set View State =====
@@ -40,7 +37,42 @@ function setActiveView(view) {
   document.getElementById("monthlyControls").style.display = isWeekly ? "none" : "block";
   document.getElementById("weeklyViewBtn").classList.toggle("active", isWeekly);
   document.getElementById("monthlyViewBtn").classList.toggle("active", !isWeekly);
-  fetchAndRenderActivity(view);
+  clearActivityContent();
+}
+
+// ===== Clear Cards and Chart =====
+function clearActivityContent() {
+  document.getElementById("activityCardsRow").innerHTML = "";
+  const chartWrapper = document.getElementById("activityChartWrapper");
+  if (chartWrapper) chartWrapper.style.display = "none";
+  const ctx = document.getElementById("activityTrendChart").getContext("2d");
+  if (activityChart) {
+    activityChart.destroy();
+    activityChart = null;
+  }
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+}
+
+// ===== Show Prompt & Play Audio Scoped =====
+function triggerActivityError(message) {
+  const section = document.getElementById("activitySection");
+  let prompt = section.querySelector(".error-prompt");
+  if (!prompt) {
+    prompt = document.createElement("div");
+    prompt.className = "error-prompt";
+    section.appendChild(prompt);
+  }
+  prompt.innerText = message;
+  prompt.style.display = "flex";
+  prompt.classList.remove("fadeOut");
+  setTimeout(() => prompt.classList.add("fadeOut"), 2500);
+  setTimeout(() => (prompt.style.display = "none"), 3000);
+
+  const audio = document.getElementById("autobotsAudio");
+  if (audio) {
+    audio.currentTime = 0;
+    audio.play();
+  }
 }
 
 // ===== Fetch Activity Data =====
@@ -50,43 +82,51 @@ async function fetchAndRenderActivity(view) {
   const params = new URLSearchParams({ userid: USER_ID, view });
 
   if (view === "weekly") {
-    let date = document.getElementById("weekPicker").value;
-    if (!date) {
-      const today = new Date();
-      date = today.toISOString().split("T")[0];
-      document.getElementById("weekPicker").value = date;
+    const date = document.getElementById("weekPicker").value;
+    if (!date || isNaN(new Date(date))) {
+      clearActivityContent();
+      triggerActivityError("Please select a valid week date.");
+      return;
     }
     params.append("date", date);
-  }
-
-  if (view === "monthly") {
+  } else {
     const month = document.getElementById("monthSelector").value;
-    if (!month) return;
+    if (!month) {
+      clearActivityContent();
+      triggerActivityError("Please select a valid month.");
+      return;
+    }
     params.append("month", month);
   }
 
   try {
     const res = await fetch(`/get_user_activity_data?${params}`);
     const data = await res.json();
-    console.log(`[✔] ${view} data:`, data);
-    renderActivity(data, view);
+
+    if (!data || !data.chart_labels || data.chart_labels.length === 0) {
+      clearActivityContent();
+      triggerActivityError("No data found for the selected period.");
+      return;
+    }
+
+    renderActivity(data);
   } catch (err) {
     console.error(`Error fetching ${view} data:`, err);
+    clearActivityContent();
+    triggerActivityError("Failed to fetch activity data.");
   }
 }
 
 // ===== Render Cards and Chart =====
-function renderActivity(data, view) {
+function renderActivity(data) {
   renderMetricCards(data);
   renderActivityChart(data.chart_labels || [], data.chart_values || []);
 }
 
-// ===== Render Metric Cards =====
 function renderMetricCards(data) {
   const container = document.getElementById("activityCardsRow");
   container.innerHTML = "";
 
-  // Flip card for Days
   const daysCard = document.createElement("div");
   daysCard.className = "activity-card flip-card";
   daysCard.innerHTML = `
@@ -101,8 +141,6 @@ function renderMetricCards(data) {
       </div>
     </div>`;
   container.appendChild(daysCard);
-
-  
 
   const metrics = [
     { label: "Avg Hours", value: data.avg_hours },
@@ -120,10 +158,11 @@ function renderMetricCards(data) {
   }
 }
 
-// ===== Render Trend Chart =====
 function renderActivityChart(labels, values) {
-  const ctx = document.getElementById("activityTrendChart").getContext("2d");
+  const chartWrapper = document.getElementById("activityChartWrapper");
+  chartWrapper.style.display = "block";
 
+  const ctx = document.getElementById("activityTrendChart").getContext("2d");
   if (activityChart) activityChart.destroy();
 
   activityChart = new Chart(ctx, {
@@ -146,58 +185,147 @@ function renderActivityChart(labels, values) {
       responsive: true,
       plugins: {
         legend: {
-          labels: {
-            color: "#ccc",
-            font: {
-              size: 14
-            }
-          }
+          labels: { color: "#ccc", font: { size: 14 } }
         },
         tooltip: {
           mode: "index",
-          intersect: false
+          intersect: false,
+          callbacks: {
+            title: function (items) {
+              const dateStr = items[0].label;
+              const date = new Date(dateStr);
+              if (isNaN(date)) return dateStr;
+              const day = date.toLocaleDateString('en-US', { weekday: 'short' });
+              return `${day}, ${dateStr}`;
+            }
+          }
         }
       },
       scales: {
         x: {
-          ticks: {
-            color: "#bbb",
-            font: {
-              size: 12
-            }
-          },
-          grid: {
-            color: "rgba(255,255,255,0.1)"
-          }
+          ticks: { color: "#bbb", font: { size: 12 } },
+          grid: { color: "rgba(255,255,255,0.1)" }
         },
         y: {
           beginAtZero: true,
-          ticks: {
-            color: "#bbb",
-            stepSize: 1
-          },
-          grid: {
-            color: "rgba(255,255,255,0.1)"
-          }
+          ticks: { color: "#bbb", stepSize: 1 },
+          grid: { color: "rgba(255,255,255,0.1)" }
         }
       }
     }
   });
 }
 
-// ===== Populate Month Selector =====
+// ===== Populate Month Selector with Month Names =====
 function initializeMonthSelector() {
   const selector = document.getElementById("monthSelector");
   const now = new Date();
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-  for (let i = 0; i < 6; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+  selector.innerHTML = "";
+
+  for (let i = 0; i < 12; i++) {
+    const monthDate = new Date(now.getFullYear(), i, 1);
+    const value = `${monthDate.getFullYear()}-${String(i + 1).padStart(2, '0')}`;
     const option = document.createElement("option");
-    const monthStr = d.toISOString().slice(0, 7);
-    option.value = monthStr;
-    option.textContent = monthStr;
+    option.value = value;
+    option.textContent = monthNames[i];
     selector.appendChild(option);
   }
 }
 
 document.addEventListener("DOMContentLoaded", fetchUserIdFromSession);
+
+// ===== SETTINGS SECTION LOGIC =====
+document.addEventListener("DOMContentLoaded", () => {
+  const updateBtn = document.getElementById("updatePasswordBtn");
+  const saveAvatarBtn = document.getElementById("saveAvatarBtn");
+  const avatarGrid = document.getElementById("avatarGrid");
+  const profileAvatar = document.getElementById("profileAvatar");   // Navbar
+  const homeAvatar = document.getElementById("homeAvatar");         // Home card
+
+  let selectedAvatar = sessionStorage.getItem("selected_avatar") || null;
+
+  // === Apply avatar to all locations
+  function applyAvatar(avatarFile) {
+    if (profileAvatar) profileAvatar.src = `/static/Pictures/${avatarFile}`;
+    if (homeAvatar) homeAvatar.src = `/static/Pictures/${avatarFile}`;
+  }
+
+  // === Load avatar from sessionStorage if exists
+  if (selectedAvatar) {
+    applyAvatar(selectedAvatar);
+  }
+
+  // === Load from server session if not in sessionStorage
+  if (!selectedAvatar) {
+    fetch("/get_session_info")
+      .then(res => res.json())
+      .then(data => {
+        if (data.avatar) {
+          selectedAvatar = data.avatar;
+          sessionStorage.setItem("selected_avatar", selectedAvatar);
+          applyAvatar(selectedAvatar);
+        }
+      })
+      .catch(() => console.warn("Failed to fetch avatar from session"));
+  }
+
+  // === Simulate Password Change ===
+  updateBtn?.addEventListener("click", () => {
+    const current = document.getElementById("currentPassword").value.trim();
+    const newPass = document.getElementById("newPassword").value.trim();
+    const errorBox = document.getElementById("passwordError");
+
+    errorBox.style.display = "none";
+
+    if (!current || !newPass) {
+      return showError(errorBox, "Both fields are required.");
+    }
+
+    updateBtn.textContent = "✔ Updated!";
+    setTimeout(() => (updateBtn.textContent = "Update Password"), 2000);
+    document.getElementById("currentPassword").value = "";
+    document.getElementById("newPassword").value = "";
+  });
+
+  // === Avatar Select & Save (Simulated) ===
+  avatarGrid?.addEventListener("click", (e) => {
+    if (e.target.tagName === "IMG") {
+      document.querySelectorAll(".avatar-option").forEach((img) =>
+        img.classList.remove("selected")
+      );
+      e.target.classList.add("selected");
+      selectedAvatar = e.target.dataset.avatar;
+    }
+  });
+
+  saveAvatarBtn?.addEventListener("click", () => {
+    const errorBox = document.getElementById("avatarError");
+    errorBox.style.display = "none";
+
+    if (!selectedAvatar) {
+      return showError(errorBox, "Select an avatar first.");
+    }
+
+    sessionStorage.setItem("selected_avatar", selectedAvatar);
+    applyAvatar(selectedAvatar);
+
+    saveAvatarBtn.textContent = "✔ Saved!";
+    setTimeout(() => (saveAvatarBtn.textContent = "Save Avatar"), 2000);
+  });
+
+  // === Show error animation
+  function showError(el, msg) {
+    el.textContent = msg;
+    el.style.display = "block";
+    el.classList.add("shake");
+    setTimeout(() => el.classList.remove("shake"), 500);
+  }
+  
+});
+document.addEventListener("DOMContentLoaded", () => {
+  setupActivityEventListeners();       // ✅ Sets up buttons
+
+  setActiveView("monthly");            // ✅ Forces monthly view on first load
+});

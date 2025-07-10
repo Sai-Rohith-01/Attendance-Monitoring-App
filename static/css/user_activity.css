@@ -58,6 +58,7 @@
 .flip-card {
   perspective: 1000px;
 }
+
 .flip-card-inner {
   position: relative;
   width: 100%;
@@ -65,9 +66,11 @@
   transform-style: preserve-3d;
   transition: transform 0.6s;
 }
+
 .flip-card:hover .flip-card-inner {
   transform: rotateY(180deg);
 }
+
 .flip-card-front,
 .flip-card-back {
   position: absolute;
@@ -78,6 +81,7 @@
   backface-visibility: hidden;
   background: #2a2a2a;
 }
+
 .flip-card-back {
   transform: rotateY(180deg);
   background: #444;
@@ -89,11 +93,367 @@
   background: #1a1a1a;
   padding: 20px;
   border-radius: 10px;
-  max-height: 280px;          /* Reduced chart height */
+  max-height: 280px;
   overflow: hidden;
 }
 
 canvas#activityTrendChart {
-  max-height: 240px;          /* Reduce height of the canvas */
+  max-height: 240px;
   width: 100%;
+}
+
+/* ===== Load Button aligned right ===== */
+.load-activity-btn-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin: 20px 40px 10px 0;
+}
+
+#loadActivityBtn {
+  background: rgba(0, 229, 255, 0.15);
+  color: #00eaff;
+  font-weight: 600;
+  padding: 12px 26px;
+  font-size: 15px;
+  border: 1px solid #00eaff;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.3s ease;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+  backdrop-filter: blur(4px);
+}
+
+#loadActivityBtn:hover {
+  background: rgba(0, 229, 255, 0.3);
+  color: #fff;
+  box-shadow: 0 0 20px #00eaff;
+  transform: scale(1.05);
+}
+
+#activitySection .error-prompt {
+  background: rgba(255, 50, 50, 0.1);
+  color: #ff4e4e;
+  padding: 14px 26px;
+  border: 1px solid rgba(255, 0, 0, 0.4);
+  border-radius: 16px;
+  font-weight: 600;
+  text-align: center;
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  box-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+  backdrop-filter: blur(6px);
+  animation: fadeInOut 3s ease-out;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateX(-50%) scale(0.95); }
+  10% { opacity: 1; transform: translateX(-50%) scale(1); }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+
+/* ===== SETTINGS SECTION STYLING ===== */
+
+.settings-wrapper {
+  max-width: 800px;
+  margin: 4rem auto;
+  background: linear-gradient(to bottom, #0d1117, #111621);
+  padding: 3rem 2rem;
+  border-radius: 16px;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+
+
+/* ===== Headings ===== */
+#settingsSection h3 {
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  color: #00e5ff;
+  text-align: center;
+}
+
+/* ===== Settings Block Cards ===== */
+.settings-block {
+  width: 100%;
+  margin-bottom: 2.5rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.05);
+}
+
+.settings-block h4 {
+  font-size: 1.3rem;
+  color: #66fcf1;
+  margin-bottom: 1rem;
+}
+
+/* ===== Form Input Row ===== */
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.form-row input {
+  background-color: #0c0f14;
+  color: #eee;
+  border: 1px solid #1f2a38;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-row input:focus {
+  border-color: #00e5ff;
+  outline: none;
+}
+
+/* ===== Buttons ===== */
+#updatePasswordBtn,
+#saveAvatarBtn {
+  margin-top: 0.8rem;
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(to right, #00e5ff, #0077ff);
+  color: #111;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+#updatePasswordBtn:hover,
+#saveAvatarBtn:hover {
+  background: linear-gradient(to right, #0077ff, #00e5ff);
+  transform: scale(1.03);
+  box-shadow: 0 0 8px #00e5ff;
+}
+
+/* ===== Avatar Grid ===== */
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+  justify-items: center;
+}
+
+.avatar-option {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s ease, border 0.3s ease;
+  box-shadow: 0 0 5px rgba(255,255,255,0.05);
+}
+
+.avatar-option:hover {
+  transform: scale(1.05);
+  border-color: #00e5ff;
+}
+
+.avatar-option.selected {
+  border: 3px solid #00e5ff;
+  box-shadow: 0 0 10px #00e5ff;
+}
+
+/* ===== Error Box Styling ===== */
+.settings-error {
+  color: #ff5e5e;
+  margin-top: 0.6rem;
+  font-size: 0.95rem;
+  padding-left: 4px;
+  transition: all 0.3s ease;
+  animation: shakeError 0.4s ease;
+}
+
+@keyframes shakeError {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); }
+  75% { transform: translateX(-4px); }
+  100% { transform: translateX(0); }
+}
+
+.shake {
+  animation: shakeError 0.4s ease;
+}
+
+/* ===== Mini Avatar Profile (e.g. topbar icon) ===== */
+.profile-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #00e5ff;
+  box-shadow: 0 0 10px rgba(0,229,255,0.3);
+}
+
+/* ===== Fixed Sidebar ===== */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 280px;
+  padding: 2rem 1rem;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+/* ===== Dashboard Section Layout ===== */
+.dashboard-section {
+  margin-left: 280px;
+  padding: 2rem;
+
+  display: flex;
+  justify-content: center; /* center horizontally */
+}
+
+/* ===== SIDEBAR NAVIGATION STYLING ===== */
+.sidebar nav ul {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 2rem;
+}
+
+.sidebar nav ul li {
+  position: relative;
+  padding: 10px 16px;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.sidebar nav ul li:hover:not(.logout-item) {
+  background-color: rgba(0, 229, 255, 0.08);
+  border-left: 4px solid #00e5ff;
+  color: #00e5ff;
+}
+
+/* Active effect, excluding logout item */
+.sidebar ul li.active:not(.logout-item) {
+  background: rgba(0, 229, 255, 0.1);
+  border-left: 4px solid #00eaff;
+  color: #00eaff;
+}
+
+/* Optional glowing underline for active items */
+.sidebar ul li.active:not(.logout-item)::after {
+  content: "";
+  position: absolute;
+  bottom: 8px;
+  left: 20px;
+  width: 60%;
+  height: 2px;
+  background: linear-gradient(to right, #00e5ff, #0077ff);
+  box-shadow: 0 0 6px #00e5ff;
+  border-radius: 2px;
+}
+
+
+
+#extrasDropdown.show {
+  max-height: 300px; /* large enough to show contents */
+  opacity: 1;
+}
+
+/* Extras Content */
+.autobot-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ccc;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.audio-toggle-btn {
+  background: none;
+  border: none;
+  color: #00e5ff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.audio-toggle-btn:hover {
+  transform: scale(1.2);
+}
+
+/* ===== Logout Button Styling ===== */
+.logout-item {
+  pointer-events: none;
+}
+
+#logoutLink {
+  display: block;
+  text-align: center;
+  margin: 40px auto 10px;
+  padding: 10px 18px;
+  width: 80%;
+  font-weight: bold;
+  font-size: 15px;
+  color: #00eaff;
+  background: rgba(0, 229, 255, 0.05);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(6px);
+  pointer-events: auto; /* Enable click */
+}
+
+#logoutLink:hover {
+  background: rgba(0, 229, 255, 0.15);
+  color: #ffffff;
+  box-shadow: 0 0 18px #00eaff;
+  transform: scale(1.05);
+}
+
+#logoutLink:focus {
+  outline: none;
+  box-shadow: 0 0 20px #00ffff;
+}
+#profileAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #00e5ff;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+}
+
+#profileAvatar:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 18px #00e5ff, 0 0 12px #0077ff inset;
+}
+.logo {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #00eaff;
+  letter-spacing: 1px;
+  text-shadow: 0 0 6px rgba(0, 229, 255, 0.4);
+  padding-left: 4px;
 }
