@@ -30,7 +30,8 @@
         <header class="dashboard-header">
           <div class="logo">{{ session['username'] }}</div>
           <div class="user-info">
-            <img id="profileAvatar" class="profile-avatar" src="/static/Pictures/avatar1.jpg" alt="Profile" />
+            <img id="profileAvatar" src="/static/Pictures/default.jpg" class="avatar" alt="Navbar Avatar" />
+            
           </div>
         </header>
 
@@ -69,7 +70,7 @@
         <!-- ✅ HOME SECTION -->
         <section id="homeSection" class="dashboard-section">
           <div class="id-card {% if rating >= 70 %}gold{% elif rating >= 60 %}silver{% elif rating >= 40 %}bronze{% endif %}">
-            <img id="homeAvatar" src="{{ url_for('static', filename='Pictures/avatar1.png') }}" class="avatar" alt="Profile Picture">
+            <img id="homeAvatar" src="/static/Pictures/default.jpg" class="avatar" alt="Home Avatar" />
             <div class="id-details">
               <h2>{{ user_name }}</h2>
               <p><strong>Role:</strong> Employee</p>

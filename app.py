@@ -1893,17 +1893,30 @@ def get_user_activity_data():
 
 
 from flask import session
+import random
 
 @app.route('/get_session_info')
 def get_session_info():
     if 'username' in session:
+        # Assign random avatar if not already set
+        if 'avatar' not in session:
+            avatar_list = [
+                'avatar1.jpg',
+                'avatar2.jpg',
+                'avatar3.jpg',
+                'avatar4.jpg',
+                'avatar5.jpg',
+                'avatar6.jpg'
+            ]
+            session['avatar'] = random.choice(avatar_list)
+
         return jsonify({
             'userid': session['username'],
             'role': session.get('role', 'user'),
-            "avatar": session.get("avatar", "")  # <-- Add this
+            'avatar': session['avatar']
         })
-    return jsonify({'error': 'not_logged_in'}), 401
 
+    return jsonify({'error': 'not_logged_in'}), 401
 
 
 @app.route('/change_profile_avatar', methods=['POST'])

@@ -183,24 +183,29 @@ function renderActivityChart(labels, values) {
     },
     options: {
       responsive: true,
-      plugins: {
-        legend: {
-          labels: { color: "#ccc", font: { size: 14 } }
-        },
-        tooltip: {
-          mode: "index",
-          intersect: false,
-          callbacks: {
-            title: function (items) {
-              const dateStr = items[0].label;
-              const date = new Date(dateStr);
-              if (isNaN(date)) return dateStr;
-              const day = date.toLocaleDateString('en-US', { weekday: 'short' });
-              return `${day}, ${dateStr}`;
-            }
-          }
-        }
-      },
+ plugins: {
+  legend: {
+    labels: { color: "#ccc", font: { size: 14 } }
+  },
+  tooltip: {
+    mode: "index",
+    intersect: false,
+    callbacks: {
+      title: function (items) {
+        const dateStr = items[0].label;
+        const [dayStr, monthStr, yearStr] = dateStr.split("-");
+        const day = parseInt(dayStr, 10);
+        const month = parseInt(monthStr, 10) - 1;
+        const year = parseInt(yearStr, 10);
+        const date = new Date(year, month, day);
+        if (isNaN(date.getTime())) return dateStr;
+        const weekday = date.toLocaleDateString("en-US", { weekday: "short" });
+        return `${weekday}, ${dateStr}`;
+      }
+    }
+  }
+}
+,
       scales: {
         x: {
           ticks: { color: "#bbb", font: { size: 12 } },
@@ -241,24 +246,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const updateBtn = document.getElementById("updatePasswordBtn");
   const saveAvatarBtn = document.getElementById("saveAvatarBtn");
   const avatarGrid = document.getElementById("avatarGrid");
-  const profileAvatar = document.getElementById("profileAvatar");   // Navbar
-  const homeAvatar = document.getElementById("homeAvatar");         // Home card
+  const profileAvatar = document.getElementById("profileAvatar");   // Navbar avatar
+  const homeAvatar = document.getElementById("homeAvatar");         // Home section avatar
 
   let selectedAvatar = sessionStorage.getItem("selected_avatar") || null;
 
-  // === Apply avatar to all locations
+  // === Apply avatar to all locations ===
   function applyAvatar(avatarFile) {
-    if (profileAvatar) profileAvatar.src = `/static/Pictures/${avatarFile}`;
-    if (homeAvatar) homeAvatar.src = `/static/Pictures/${avatarFile}`;
+    const avatarPath = `/static/Pictures/${avatarFile}`;
+    if (profileAvatar) profileAvatar.src = avatarPath;
+    if (homeAvatar) homeAvatar.src = avatarPath;
   }
 
-  // === Load avatar from sessionStorage if exists
+  // === Load avatar from sessionStorage if exists ===
   if (selectedAvatar) {
     applyAvatar(selectedAvatar);
-  }
-
-  // === Load from server session if not in sessionStorage
-  if (!selectedAvatar) {
+  } else {
+    // === Fallback: Load from server session ===
     fetch("/get_session_info")
       .then(res => res.json())
       .then(data => {
@@ -266,10 +270,13 @@ document.addEventListener("DOMContentLoaded", () => {
           selectedAvatar = data.avatar;
           sessionStorage.setItem("selected_avatar", selectedAvatar);
           applyAvatar(selectedAvatar);
+        } else {
+          console.warn("No avatar in session");
         }
       })
-      .catch(() => console.warn("Failed to fetch avatar from session"));
+      .catch(err => console.warn("Failed to fetch session info", err));
   }
+
 
   // === Simulate Password Change ===
   updateBtn?.addEventListener("click", () => {
@@ -328,4 +335,44 @@ document.addEventListener("DOMContentLoaded", () => {
   setupActivityEventListeners();       // ✅ Sets up buttons
 
   setActiveView("monthly");            // ✅ Forces monthly view on first load
+});
+// settings.js or main.js
+document.addEventListener("DOMContentLoaded", () => {
+  const homeAvatar = document.getElementById("homeAvatar");
+
+  fetch("/get_session_info")
+    .then(res => res.json())
+    .then(data => {
+      if (data.avatar) {
+        homeAvatar.src = `/static/Pictures/${data.avatar}`;
+      } else {
+        homeAvatar.src = "/static/Pictures/default.jpg";
+      }
+    })
+    .catch(() => {
+      homeAvatar.src = "/static/Pictures/default.jpg";
+    });
+});
+document.addEventListener("DOMContentLoaded", () => {
+  const profileAvatar = document.getElementById("profileAvatar");
+  const homeAvatar = document.getElementById("homeAvatar");
+
+  fetch("/get_session_info")
+    .then(res => res.json())
+    .then(data => {
+      if (data.avatar) {
+        const avatarPath = `/static/Pictures/${data.avatar}`;
+        if (profileAvatar) profileAvatar.src = avatarPath;
+        if (homeAvatar) homeAvatar.src = avatarPath;
+      } else {
+        // fallback to default avatar
+        if (profileAvatar) profileAvatar.src = "/static/Pictures/default.jpg";
+        if (homeAvatar) homeAvatar.src = "/static/Pictures/default.jpg";
+      }
+    })
+    .catch(() => {
+      // fallback on error
+      if (profileAvatar) profileAvatar.src = "/static/Pictures/default.jpg";
+      if (homeAvatar) homeAvatar.src = "/static/Pictures/default.jpg";
+    });
 });
