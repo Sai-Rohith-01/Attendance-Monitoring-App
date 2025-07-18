@@ -1,11 +1,11 @@
+# 
+import sqlite3
 import os
-import mysql.connector
+
+# Path to SQLite DB file
+DB_PATH = os.path.join(os.path.dirname(__file__), "employee.db")
 
 def get_connection():
-    return mysql.connector.connect(
-        host=os.getenv("DB_HOST", "localhost"),     # use env var or fallback to localhost
-        user=os.getenv("DB_USER", "root"),
-        password=os.getenv("DB_PASS", "Spattern6dots@"),
-        database=os.getenv("DB_NAME", "employee_db")
-    )
-
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn.row_factory = sqlite3.Row  # allows accessing columns by name
+    return conn

@@ -47,21 +47,21 @@ def do_login():
 
     try:
         conn = get_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM employee_logins WHERE userid = %s", (username,))
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM employee_logins WHERE userid = ?", (username,))
         user = cursor.fetchone()
         conn.close()
 
         if user and verify_password(password, user['password_hash']):
-            session['userid'] = user['userid'] 
+            session['userid'] = user['userid']
             session['username'] = username
-            session['role'] = user.get('role', 'user')
+            session['role'] = user['role'] if user['role'] else 'user'
 
             # Optional: Insert login record
             try:
                 audit_conn = get_connection()
                 audit_cursor = audit_conn.cursor()
-                audit_cursor.execute("INSERT INTO login_audit (userid) VALUES (%s)", (username,))
+                audit_cursor.execute("INSERT INTO login_audit (userid, login_time) VALUES (?, datetime('now'))", (username,))
                 audit_conn.commit()
                 audit_conn.close()
             except:
@@ -69,7 +69,8 @@ def do_login():
 
             return redirect(url_for('login', auth="success", role=session['role']))
 
-    except:
+    except Exception as e:
+        print("DB error:", e)
         # Fall back to hardcoded users if DB fails
         user = users.get(username)
         if user and user['password'] == password:
@@ -78,6 +79,7 @@ def do_login():
             return redirect(url_for('login', auth="success", role=user['role']))
 
     return redirect(url_for('login', auth="fail"))
+
 
 
 
@@ -92,14 +94,13 @@ def dashboard_admin():
     userid = session.get('username')
 
     conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    # Fetch the full name of the admin
-    cursor.execute("SELECT name FROM employee_logins WHERE userid = %s", (userid,))
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM employee_logins WHERE userid = ?", (userid,))
     user = cursor.fetchone()
     user_name = user['name'] if user else 'Admin'
+    conn.close()
 
-    # Load today's stats (same as your original logic)
+    # Load today's stats
     today = datetime.today().date()
     today_df = paired_df[paired_df['DATE_NEW'] == today].copy()
     total_employees = today_df['Userid'].nunique()
@@ -110,8 +111,6 @@ def dashboard_admin():
 
     mismatches_today = 0  # Placeholder
 
-    conn.close()
-
     return render_template(
         'dashboard_admin.html',
         total_employees=total_employees,
@@ -119,6 +118,7 @@ def dashboard_admin():
         mismatches_today=mismatches_today,
         user_name=user_name
     )
+
 
 
 
@@ -134,22 +134,20 @@ def login_history():
         return redirect(url_for('login'))
 
     conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
-    # ========== Auto-delete logs older than 5 mins (FOR TESTING) ==========
-    cursor.execute("DELETE FROM login_audit WHERE login_time < NOW() - INTERVAL 5 MINUTE")
+    # Auto-delete logs older than 5 mins (FOR TESTING)
+    cursor.execute("DELETE FROM login_audit WHERE login_time < datetime('now', '-5 minutes')")
 
-    # ========== Future logic: Keep all logs ==========
-    # (Uncomment this in future and remove the DELETE query above)
-    # cursor.execute("SELECT * FROM login_audit ORDER BY login_time DESC")
-
-    # For now: Load only recent 5-minute logs
+    # Load only recent logs
     cursor.execute("SELECT * FROM login_audit ORDER BY login_time DESC")
 
     records = cursor.fetchall()
+    conn.commit()
     conn.close()
 
     return render_template("login_history.html", records=records)
+
 
 
 
@@ -1743,19 +1741,16 @@ def get_employee_in_pattern():
 @app.route('/dashboard_user')
 def dashboard_user():
     if session.get('role') != 'user':
-        return redirect(url_for('dashboard_user'))
-
+        return redirect(url_for('login'))  # ✅ Avoid infinite redirect
 
     userid = session.get('username')
 
     # Fetch user name from DB
     conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    cursor.execute("SELECT name FROM employee_logins WHERE userid = %s", (userid,))
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM employee_logins WHERE userid = ?", (userid,))
     user = cursor.fetchone()
     user_name = user['name'] if user else 'User'
-
     conn.close()
 
     # Get Final_Score from user_stats dataframe
@@ -1778,6 +1773,7 @@ def dashboard_user():
         user_name=user_name,
         rating=rating
     )
+
 
 
 from flask import request, jsonify
