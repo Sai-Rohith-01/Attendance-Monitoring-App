@@ -211,29 +211,67 @@ header {
     100% { opacity: 0; display: none; }
 }
 
-/* Logout Button */
-.logout-container {
-    position: fixed !important;
-    bottom: 20px !important;
-    left: 20px !important;
-    z-index: 9999 !important;
+#logoutBtn {
+  position: fixed;        /* keeps it pinned */
+  bottom: 20px;           /* distance from bottom */
+  left: 20px;             /* distance from left */
+  background: #e63946;    /* red */
+  color: white;
+  padding: 10px 18px;
+  text-decoration: none;
+  font-weight: bold;
+  border-radius: 6px;
+  transition: background 0.3s ease, transform 0.2s ease;
+  font-family: "Poppins", sans-serif;
+  z-index: 9999;          /* always on top */
 }
 
-.logout-btn {
-    background-color: var(--logout-bg);
-    color: white;
-    padding: 10px 18px;
-    border: none;
-    border-radius: 8px;
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    transition: background-color 0.3s ease;
+#logoutBtn:hover {
+  background: #c92d3d;   /* darker red on hover */
+  transform: scale(1.05);
 }
 
-.logout-btn:hover {
-    background-color: var(--logout-hover);
+#logoutBtn:active {
+  transform: scale(0.98);
 }
+.sidebar-item {
+  display: block;
+  padding: 10px 20px;
+  margin-top: 20px;
+  color: white;
+  text-decoration: none;         /* removes underline */
+  font-family: "Poppins", sans-serif;
+  transition: background 0.3s ease;
+}
+
+.sidebar-item:hover {
+  background: rgba(255, 255, 255, 0.1); /* subtle hover */
+  text-decoration: none;               /* still no underline */
+}
+
+
+.sidebar-btn {
+  display: block;
+  padding: 12px 20px;
+  margin: 10px 0;
+  background: rgba(255, 255, 255, 0.08); /* subtle contrast */
+  color: #f1f1f1;
+  text-decoration: none;
+  font-weight: 500;
+  font-family: "Poppins", sans-serif;
+  border-radius: 6px;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.sidebar-btn:hover {
+  background: rgba(255, 255, 255, 0.15); /* lighter on hover */
+  transform: translateX(3px); /* small slide effect */
+}
+
+.sidebar-btn:active {
+  transform: scale(0.98);
+}
+
 
 /* Dark Mode Toggle Button */
 .dark-mode-toggle {

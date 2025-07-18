@@ -38,10 +38,12 @@
           <li class="sidebar-item" id="analyticsBtn">📈 Trends</li>
           <li class="sidebar-item" id="reportsBtn">📄 Reports</li>
           <li class="sidebar-item" id="timingInsightsTab">🕒Timing Insights</li>  
-          <!--Viw log-->
-          <a href="{{ url_for('login_history') }}">
-            <li class="sidebar-utem" style="padding:10px 20px; margin-top:20px; color: white;">View Login Logs</li>
-          </a>             
+          <!-- View log -->
+           <a href="{{ url_for('login_history') }}" class="sidebar-btn">
+            <span>View Login Logs</span>
+          </a>
+
+            
         </ul>
       </nav>
     </aside>
